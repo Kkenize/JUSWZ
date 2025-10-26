@@ -17,28 +17,26 @@
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background-color: var(--bc-dark);
+    background-color: #1C1C1C;
     position: fixed;
     height: 100vh;
     left: 0;
     top: 0;
     overflow-y: auto;
     z-index: 1000;
+    border-right: 1px solid rgba(255,255,255,0.1);
 }
 
 .sidebar-header {
-    padding: 1.5rem 1rem;
+    padding: 0;
     background-color: #1C1C1C;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .bc-logo {
     width: 100%;
-    max-width: 200px;
     height: auto;
     display: block;
-    margin: 0 auto;
-    padding: 0.5rem;
 }
 
 .sidebar-nav {
@@ -53,16 +51,19 @@
     transition: all 0.3s ease;
     font-size: 1rem;
     white-space: nowrap;
+    border-left: 3px solid transparent;
 }
 
 .nav-link:hover {
     background-color: var(--gray-hover);
     color: var(--bc-gold);
+    text-decoration: none;
 }
 
 .nav-link.active {
     background-color: var(--gray-hover);
     border-left: 3px solid var(--bc-gold);
+    color: var(--bc-gold);
 }
 
 /* Main Content Area */
@@ -73,17 +74,40 @@
     background-color: #f8f9fa;
 }
 
-.hatchery-banner {
+/* Header Banner */
+.header-banner {
     width: 100%;
-    height: auto;
-    max-height: 80px;
-    object-fit: cover;
-    margin-bottom: 2rem;
+    height: var(--banner-height);
+    background-color: var(--bc-beige);
+    padding: 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 900;
+}
+
+.banner-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 2rem;
+    background: url('../JUSWZ_login_img/science-icons-bg.png') right center no-repeat;
+    background-size: contain;
+}
+
+.hatchery-banner {
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    max-height: var(--banner-height);
 }
 
 /* Dashboard Content */
 .dashboard-content {
     padding: 2rem;
+    background-color: #f8f9fa;
 }
 
 .welcome-header {
@@ -95,11 +119,14 @@
     font-weight: 700;
     color: #000;
     margin-bottom: 0.5rem;
+    line-height: 1.2;
 }
 
 .welcome-subtitle {
     font-size: 1.25rem;
     color: #6c757d;
+    font-weight: 400;
+    line-height: 1.4;
 }
 
 /* Dashboard Cards Grid */
@@ -166,24 +193,6 @@
     }
 }
 
-.header-area {
-    background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    width: 100%;
-}
-
-.hatchery-banner-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: white;
-    padding: 0.5rem;
-}
-
 .btn-bc-gold {
     background-color: var(--bc-gold);
     color: white;
@@ -195,12 +204,33 @@
     color: white;
 }
 
+/* Mobile Responsive Styles */
 @media (max-width: 768px) {
-    .sidebar-header {
-        flex-direction: row;
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header-banner {
+        padding: 0.5rem;
+    }
+
+    .banner-content {
+        padding: 0.5rem 1rem;
         justify-content: center;
-        gap: 1rem;
-        padding: 1rem;
     }
     
     .bc-logo {

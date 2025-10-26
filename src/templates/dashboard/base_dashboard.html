@@ -18,22 +18,31 @@
             </div>
             <nav class="sidebar-nav">
                 {% block sidebar_items %}
-                <a href="#" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">Dashboard</a>
-                <a href="#" class="nav-link">My Trainings</a>
-                <a href="#" class="nav-link">My Certifications</a>
-                <a href="#" class="nav-link">Tool Reservations</a>
-                <a href="#" class="nav-link">Issues/Reports</a>
-                <a href="#" class="nav-link">My Waitlists</a>
-                <a href="#" class="nav-link">User Profile</a>
+                <a href="{% url 'dashboard:landing' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">Home</a>
+                <a href="{% url 'dashboard:student' %}" class="nav-link {% if request.path == '/dashboard/student/' %}active{% endif %}">Student Dashboard</a>
+                <a href="{% url 'dashboard:staff' %}" class="nav-link {% if request.path == '/dashboard/staff/' %}active{% endif %}">Staff Dashboard</a>
+                <a href="{% url 'dashboard:admin' %}" class="nav-link {% if request.path == '/dashboard/admin/' %}active{% endif %}">Admin Dashboard</a>
+                <a href="#trainings" class="nav-link">My Trainings</a>
+                <a href="#certifications" class="nav-link">My Certifications</a>
+                <a href="#reservations" class="nav-link">Tool Reservations</a>
+                <a href="#reports" class="nav-link">Issues/Reports</a>
+                <a href="#waitlists" class="nav-link">My Waitlists</a>
+                <a href="#profile" class="nav-link">User Profile</a>
                 {% endblock %}
             </nav>
         </aside>
 
         <!-- Main Content Area -->
         <main class="main-content">
+            <!-- Header Banner -->
+            <header class="header-banner">
+                <div class="banner-content">
+                    <img src="{% static 'JUSWZ_login_img/bchatchery_cover 1.png' %}" alt="The Hatchery Banner" class="hatchery-banner">
+                </div>
+            </header>
+
             <!-- Dashboard Content -->
             <div class="dashboard-content">
-                <img src="{% static 'JUSWZ_login_img/bchatchery_cover 1.png' %}" alt="The Hatchery Banner" class="hatchery-banner">
                 {% block content %}{% endblock %}
             </div>
         </main>
