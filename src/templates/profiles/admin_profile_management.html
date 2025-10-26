@@ -339,7 +339,19 @@
                     
                     <div class="form-group">
                         <label for="{{ role_form.role.id_for_label }}">User Role</label>
-                        {{ role_form.role }}
+
+                        {# If target user is admin, freeze the dropdown #}
+                        {# Demotion Protection Added #}
+                        {% if user_profile.is_admin %}
+                            <select class="form-control" disabled>
+                                <option value="admin" selected>Admin</option>
+                            </select>
+                            <div class="help-text">This user is an admin and their role cannot be changed.</div>
+                        {% else %}
+                            {{ role_form.role }}
+                            <div class="help-text">Change the user's role. Admins can manage other users and access admin features.</div>
+                        {% endif %}
+
                         {% if role_form.role.errors %}
                             <ul class="errorlist">
                                 {% for error in role_form.role.errors %}
@@ -347,10 +359,13 @@
                                 {% endfor %}
                             </ul>
                         {% endif %}
-                        <div class="help-text">Change the user's role. Admins can manage other users and access admin features.</div>
                     </div>
                     
-                    <button type="submit" class="btn">Update Role</button>
+                    {# Disable submit button for admins #}
+                    <button type="submit" class="btn"
+                        {% if user_profile.is_admin %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+                        Update Role
+                    </button>
                 </form>
             </div>
         </div>

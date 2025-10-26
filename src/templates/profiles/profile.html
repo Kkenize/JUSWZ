@@ -222,11 +222,18 @@
                 <h3>Account Actions</h3>
                 <div class="info-item">
                     <div class="info-value">
-                        <a href="{% url 'profiles:edit_profile' %}" style="color: #D4AF37; text-decoration: none;">Edit Profile</a> |
-                        <a href="{% url 'profiles:change_password' %}" style="color: #D4AF37; text-decoration: none;">Change Password</a>
-                        {% if request.user.userprofile.is_admin %}
-                            | <a href="{% url 'profiles:admin_user_search' %}" style="color: #D4AF37; text-decoration: none;">Admin Panel</a>
+                        {# If admin, show admin buttons #}
+                        {% if is_admin %}
+                            <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
+                            <a href="{% url 'profiles:change_password' %}">Change Password</a> |
+                            <a href="{% url 'profiles:admin_user_search' %}">Manage Users</a>
+
+                        {% else %}
+                            {# Normal user sees only these #}
+                            <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
+                            <a href="{% url 'profiles:change_password' %}">Change Password</a>
                         {% endif %}
+
                     </div>
                 </div>
             </div>

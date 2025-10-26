@@ -10,7 +10,6 @@ from .models import Profile, UserProfile
 from .forms import ProfileEditForm, CustomPasswordChangeForm, AdminRoleForm, AdminUserSearchForm
 
 # Create your views here.
-
 def is_admin(user):
     """Check if user is an admin"""
     try:
@@ -24,17 +23,27 @@ def profile_view(request, username):
     """
     Display a user's profile page.
     """
+    
+    # TEMPORARY FOR TESTING WITHOUT LOGIN
+    # request.user = User.objects.get(username="KK")
+    
     user = get_object_or_404(User, username=username)
+
+    # No one may view someone else's profile
+    if request.user != user:
+        messages.error(request, 'You do not have permission to view this profile.')
+        return redirect('profiles:profile', username=request.user.username)
+
     try:
         profile = user.profile
     except Profile.DoesNotExist:
-        # Create a profile if it doesn't exist
         profile = Profile.objects.create(user=user)
-    
+
     context = {
         'profile_user': user,
         'profile': profile,
         'is_own_profile': request.user == user,
+        'is_admin': is_admin(request.user),  
     }
     return render(request, 'profiles/profile.html', context)
 
@@ -151,12 +160,17 @@ def admin_profile_management(request, username):
                 return redirect('profiles:admin_profile_management', username=username)
         
         elif 'change_role' in request.POST:
-            # Handle role change
+            # Admin role protection
+            if user_profile.is_admin:
+                messages.error(request, 'You cannot modify the role of an admin user.')
+                return redirect('profiles:admin_profile_management', username=username)
+
             role_form = AdminRoleForm(request.POST, instance=user_profile)
             if role_form.is_valid():
                 role_form.save()
                 messages.success(request, f'{target_user.username}\'s role has been updated successfully!')
                 return redirect('profiles:admin_profile_management', username=username)
+
     else:
         form = ProfileEditForm(user=target_user, instance=profile)
         password_form = CustomPasswordChangeForm(target_user)
