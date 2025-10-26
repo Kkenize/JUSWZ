@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BC Hatchery</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #333;
+            background: #fff;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+        }
+        
+        /* Top Header Bar */
+        .top-bar {
+            background: white;
+            color: #333;
+            padding: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 60px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .logo img {
+            height: 60px;
+            width: auto;
+            display: block;
+        }
+        
+        .nav-center {
+            font-weight: 700;
+            font-size: 18px;
+            color: #333;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .nav-center a {
+            color: #333;
+            text-decoration: none;
+        }
+        
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-right: 20px;
+        }
+        
+        .nav-right a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        
+        .search-bar {
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            padding: 8px 15px;
+            border-radius: 4px;
+            width: 200px;
+        }
+        
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+        
+        .main-content img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .button-container img {
+            max-width: auto;
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header Bar -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <img src="{% static 'JUSWZ_login_img/BCLOGO.png' %}" alt="BC Logo">
+        </div>
+        
+        <div class="nav-center">
+            <a href="{% url 'home' %}">Home</a>
+        </div>
+        
+        <div class="nav-right">
+            <a href="{% url 'login' %}">Log in</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <img src="{% static 'JUSWZ_login_img/hatcheryhome1.png' %}" alt="Hatchery Home 1">
+        <img src="{% static 'JUSWZ_login_img/hometext.png' %}" alt="Home Text">
+        
+        <div class="button-container">
+            <a href="{% url 'login' %}">
+                <img src="{% static 'JUSWZ_login_img/loginstartbutton.png' %}" alt="Login & Get Started">
+            </a>
+            <a href="#learn-more">
+                <img src="{% static 'JUSWZ_login_img/learnmorebutton.png' %}" alt="Learn More">
+            </a>
+        </div>
+        
+        <img src="{% static 'JUSWZ_login_img/hatcheryhome2.png' %}" alt="Hatchery Home 2">
+    </div>
+</body>
+</html>
+

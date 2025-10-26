@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    {% load static %}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff6ed;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 0;
+        }
+        
+        .login-cover-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            width: auto;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 60px 80px;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            margin: 40px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            max-width: 600px;
+        }
+        
+        .login-box h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            font-size: 60px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .login-box p {
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            font-size: 20px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .login-box a {
+            text-decoration: none;
+        }
+        
+        .login-box .button-image {
+            height: 60px;
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="{% static 'JUSWZ_login_img/bchatchery_cover 1.png' %}" alt="Login Cover" class="login-cover-image">
+        
+        <div class="login-box">
+            <h1>Sign In</h1>
+            <p>Create an account or log in to get started.</p>
+            <a href="#google-signin">
+                <img src="{% static 'JUSWZ_login_img/GOOGLESIGNINBUTTON.png' %}" alt="Sign in with Google" class="button-image">
+            </a>
+            <p style="margin-top: 10px;">Return to Homepage.</p>
+            <a href="{% url 'home' %}">
+                <img src="{% static 'JUSWZ_login_img/bchomelogo.png' %}" alt="Return to Homepage" class="button-image">
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+
