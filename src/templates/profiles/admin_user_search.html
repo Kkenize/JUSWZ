@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #FFFFFF;
+            color: #1C1C1C;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #FFFFFF;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid #E0E0E0;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%);
+            color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #D4AF37;
+        }
+        .admin-header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .admin-content {
+            padding: 30px;
+            background: #FFFFFF;
+        }
+        .search-form {
+            background: #F8F8F8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #D4AF37;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1C1C1C;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #E0E0E0;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #FFFFFF;
+            color: #1C1C1C;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #D4AF37;
+            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+        }
+        .btn {
+            background: #D4AF37;
+            color: #1C1C1C;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #B8941F;
+            color: #FFFFFF;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: #FFFFFF;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        .users-table th {
+            background: #F8F8F8;
+            font-weight: bold;
+            color: #1C1C1C;
+        }
+        .users-table tr:hover {
+            background: #F8F8F8;
+        }
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .role-admin {
+            background: #D4AF37;
+            color: #1C1C1C;
+        }
+        .role-user {
+            background: #6c757d;
+            color: #FFFFFF;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 10px;
+        }
+        .pagination a,
+        .pagination span {
+            padding: 8px 12px;
+            border: 1px solid #E0E0E0;
+            text-decoration: none;
+            color: #1C1C1C;
+            border-radius: 4px;
+        }
+        .pagination a:hover {
+            background: #D4AF37;
+            color: #1C1C1C;
+        }
+        .pagination .current {
+            background: #D4AF37;
+            color: #1C1C1C;
+            font-weight: bold;
+        }
+        .back-button {
+            display: inline-block;
+            background: #6c757d;
+            color: #FFFFFF;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .back-button:hover {
+            background: #5a6268;
+        }
+        .messages {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Admin - User Management</h1>
+        </div>
+        
+        <div class="admin-content">
+            <a href="{% url 'profiles:profile' username=request.user.username %}" class="back-button">← Back to Profile</a>
+            
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="search-form">
+                <form method="get">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.search_query.id_for_label }}">Search Users</label>
+                            {{ form.search_query }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.role_filter.id_for_label }}">Filter by Role</label>
+                            {{ form.role_filter }}
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            {% if users %}
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.get_full_name|default:"-" }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.userprofile.role == 'admin' %}
+                                        <span class="role-badge role-admin">Admin</span>
+                                    {% else %}
+                                        <span class="role-badge role-user">User</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'profiles:admin_profile_management' username=user.username %}" class="btn btn-secondary">Manage</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if page_obj.has_other_pages %}
+                    <div class="pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">&laquo; First</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Previous</a>
+                        {% endif %}
+                        
+                        <span class="current">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Next</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Last &raquo;</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="no-results">
+                    <p>No users found matching your search criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
