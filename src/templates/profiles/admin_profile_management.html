@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage {{ target_user.username }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #FFFFFF;
+            color: #1C1C1C;
+        }
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #FFFFFF;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid #E0E0E0;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%);
+            color: #FFFFFF;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #D4AF37;
+        }
+        .admin-header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .admin-content {
+            padding: 30px;
+            background: #FFFFFF;
+        }
+        .profile-section {
+            margin-bottom: 40px;
+            background: #F8F8F8;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #D4AF37;
+        }
+        .profile-section h3 {
+            color: #1C1C1C;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1C1C1C;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #E0E0E0;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #FFFFFF;
+            color: #1C1C1C;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #D4AF37;
+            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+        }
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .btn {
+            background: #D4AF37;
+            color: #1C1C1C;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #B8941F;
+            color: #FFFFFF;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: #FFFFFF;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: #FFFFFF;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .back-button {
+            display: inline-block;
+            background: #6c757d;
+            color: #FFFFFF;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .back-button:hover {
+            background: #5a6268;
+        }
+        .messages {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .user-info {
+            background: #F8F8F8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #D4AF37;
+        }
+        .user-info h2 {
+            margin-top: 0;
+            color: #1C1C1C;
+        }
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .role-admin {
+            background: #D4AF37;
+            color: #1C1C1C;
+        }
+        .role-user {
+            background: #6c757d;
+            color: #FFFFFF;
+        }
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .errorlist {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            list-style: none;
+            padding: 0;
+        }
+        .errorlist li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Admin - Manage User</h1>
+        </div>
+        
+        <div class="admin-content">
+            <a href="{% url 'profiles:admin_user_search' %}" class="back-button">← Back to User Search</a>
+            
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="user-info">
+                <h2>{{ target_user.username }}</h2>
+                <p><strong>Name:</strong> {{ target_user.get_full_name|default:"Not provided" }}</p>
+                <p><strong>Email:</strong> {{ target_user.email }}</p>
+                <p><strong>Role:</strong> 
+                    {% if user_profile.role == 'admin' %}
+                        <span class="role-badge role-admin">Admin</span>
+                    {% else %}
+                        <span class="role-badge role-user">User</span>
+                    {% endif %}
+                </p>
+                <p><strong>Joined:</strong> {{ target_user.date_joined|date:"F d, Y" }}</p>
+                <p><strong>Last Login:</strong> {{ target_user.last_login|date:"F d, Y H:i"|default:"Never" }}</p>
+            </div>
+            
+            <!-- Profile Editing Section -->
+            <div class="profile-section">
+                <h3>Edit Profile Information</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="edit_profile" value="1">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">Email</label>
+                        {{ form.email }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.bio.id_for_label }}">Bio</label>
+                        {{ form.bio }}
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.location.id_for_label }}">Location</label>
+                            {{ form.location }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.birth_date.id_for_label }}">Birth Date</label>
+                            {{ form.birth_date }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                            {{ form.phone_number }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.website.id_for_label }}">Website</label>
+                            {{ form.website }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.avatar.id_for_label }}">Profile Picture</label>
+                        {{ form.avatar }}
+                    </div>
+                    
+                    <button type="submit" class="btn">Update Profile</button>
+                </form>
+            </div>
+            
+            <!-- Password Change Section -->
+            <div class="profile-section">
+                <h3>Change Password</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="change_password" value="1">
+                    
+                    <div class="form-group">
+                        <label for="{{ password_form.old_password.id_for_label }}">Current Password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}
+                            <ul class="errorlist">
+                                {% for error in password_form.old_password.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ password_form.new_password1.id_for_label }}">New Password</label>
+                        {{ password_form.new_password1 }}
+                        {% if password_form.new_password1.errors %}
+                            <ul class="errorlist">
+                                {% for error in password_form.new_password1.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if password_form.new_password1.help_text %}
+                            <div class="help-text">{{ password_form.new_password1.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}
+                            <ul class="errorlist">
+                                {% for error in password_form.new_password2.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger">Change Password</button>
+                </form>
+            </div>
+            
+            <!-- Role Management Section -->
+            <div class="profile-section">
+                <h3>Role Management</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="change_role" value="1">
+                    
+                    <div class="form-group">
+                        <label for="{{ role_form.role.id_for_label }}">User Role</label>
+                        {{ role_form.role }}
+                        {% if role_form.role.errors %}
+                            <ul class="errorlist">
+                                {% for error in role_form.role.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <div class="help-text">Change the user's role. Admins can manage other users and access admin features.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Update Role</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
