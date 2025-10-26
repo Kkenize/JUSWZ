@@ -1,0 +1,71 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="mb-4">
+        <h1 class="display-4 fw-bold">Welcome, Administrator!</h1>
+        <p class="lead text-muted">System Overview and Management</p>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row g-4">
+        <!-- System Status -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">System Status</h3>
+                <p class="text-muted mb-4">All systems operational</p>
+                <a href="#" class="btn btn-bc-gold">View Status</a>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">User Management</h3>
+                <p class="text-muted mb-4">5 New user registrations</p>
+                <a href="#" class="btn btn-bc-gold">Manage Users</a>
+            </div>
+        </div>
+
+        <!-- Equipment Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Equipment</h3>
+                <p class="text-muted mb-4">3 Maintenance alerts</p>
+                <a href="#" class="btn btn-bc-gold">View Equipment</a>
+            </div>
+        </div>
+
+        <!-- Reports & Analytics -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Analytics</h3>
+                <p class="text-muted mb-4">Monthly report available</p>
+                <a href="#" class="btn btn-bc-gold">View Reports</a>
+            </div>
+        </div>
+
+        <!-- Security -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Security</h3>
+                <p class="text-muted mb-4">2 Access requests pending</p>
+                <a href="#" class="btn btn-bc-gold">Security Panel</a>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Settings</h3>
+                <p class="text-muted mb-4">System configuration</p>
+                <a href="#" class="btn btn-bc-gold">Configure</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

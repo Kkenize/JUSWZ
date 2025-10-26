@@ -1,0 +1,14 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+    <script src="{% static 'dashboard/js/dashboard.js' %}" defer></script>
+</head>
+<body>
+    <header><h2>Common Header</h2></header>
+    <main>{% block content %}{% endblock %}</main>
+</body>
+</html>
