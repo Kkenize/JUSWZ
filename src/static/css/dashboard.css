@@ -1,0 +1,209 @@
+:root {
+    --sidebar-width: 280px;
+    --banner-height: 80px;
+    --bc-dark: #0A0A0A;
+    --bc-gold: #C6A75E;
+    --bc-beige: #FDF5E6;
+    --text-light: #F5F5F5;
+    --gray-hover: #1C1C1C;
+}
+
+/* Layout */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bc-dark);
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 1.5rem 1rem;
+    background-color: #1C1C1C;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.bc-logo {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    padding: 0.5rem;
+}
+
+.sidebar-nav {
+    padding: 1rem 0;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    white-space: nowrap;
+}
+
+.nav-link:hover {
+    background-color: var(--gray-hover);
+    color: var(--bc-gold);
+}
+
+.nav-link.active {
+    background-color: var(--gray-hover);
+    border-left: 3px solid var(--bc-gold);
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.hatchery-banner {
+    width: 100%;
+    height: auto;
+    max-height: 80px;
+    object-fit: cover;
+    margin-bottom: 2rem;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+    padding: 2rem;
+}
+
+.welcome-header {
+    margin-bottom: 2rem;
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-subtitle {
+    font-size: 1.25rem;
+    color: #6c757d;
+}
+
+/* Dashboard Cards Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--bc-dark);
+}
+
+.card-text {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+.card-button {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: var(--bc-gold);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.card-button:hover {
+    background-color: #b89b5e;
+    color: white;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.header-area {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+}
+
+.hatchery-banner-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    padding: 0.5rem;
+}
+
+.btn-bc-gold {
+    background-color: var(--bc-gold);
+    color: white;
+    border: none;
+}
+
+.btn-bc-gold:hover {
+    background-color: #a58a4d;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .sidebar-header {
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .bc-logo {
+        margin-bottom: 0;
+    }
+}

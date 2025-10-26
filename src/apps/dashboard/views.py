@@ -18,6 +18,3 @@ def staff_dashboard(request):
 
 def admin_dashboard(request):
     return render(request, 'dashboard/admin_dashboard.html')
-
-def trainer_dashboard(request):
-    return render(request, 'dashboard/trainer_dashboard.html')

@@ -6,167 +6,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BC Hatchery Dashboard{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --bc-gold: #b89b5e;
-            --bc-dark-gray: #333333;
-        }
-        
-        .sidebar {
-            background-color: var(--bc-dark-gray);
-            min-height: 100vh;
-            position: fixed;
-            left: 0;
-            width: 250px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            padding: 1.5rem;
-            background-color: var(--bc-dark-gray);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .bc-logo {
-            width: 100%;
-            height: auto;
-            max-width: 180px;
-            padding: 0.5rem;
-        }
-        
-        .sidebar .nav-link {
-            color: white;
-            padding: 0.8rem 1rem;
-            transition: background-color 0.3s;
-        }
-        
-        .sidebar .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-        }
-        
-        .main-content {
-            margin-left: 250px;
-        }
-        
-        .header-area {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            width: 100%;
-        }
-
-        .hatchery-banner-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: white;
-            padding: 0.5rem;
-        }
-        
-        .hatchery-banner {
-            height: 80px;
-            width: 100%;
-            object-fit: contain;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-                min-height: auto;
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-            
-            .sidebar-header {
-                flex-direction: row;
-                justify-content: center;
-                gap: 1rem;
-                padding: 1rem;
-            }
-            
-            .bc-logo {
-                margin-bottom: 0;
-            }
-        }
-        
-        .dashboard-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        
-        .dashboard-card:hover {
-            transform: translateY(-2px);
-        }
-        
-        .btn-bc-gold {
-            background-color: var(--bc-gold);
-            color: white;
-            border: none;
-        }
-        
-        .btn-bc-gold:hover {
-            background-color: #a58a4d;
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-                min-height: auto;
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-        }
-    </style>
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-light">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <!-- BC Logo in Sidebar -->
-        <div class="sidebar-header">
-            <img src="{% static 'JUSWZ_login_img/BCLOGO.png' %}" alt="Boston College Logo" class="bc-logo">
-        </div>
-        <nav class="nav flex-column">
-            {% block sidebar_items %}
-            <a class="nav-link" href="#">Dashboard</a>
-            <a class="nav-link" href="#">My Trainings</a>
-            <a class="nav-link" href="#">My Certifications</a>
-            <a class="nav-link" href="#">Tool Reservations</a>
-            <a class="nav-link" href="#">Issues/Reports</a>
-            <a class="nav-link" href="#">My Waitlists</a>
-            <a class="nav-link" href="#">User Profile</a>
-            {% endblock %}
-        </nav>
-    </div>
-
-    <!-- Main Content Area -->
-    <div class="main-content">
-        <!-- Header -->
-        <header class="header-area">
-            <div class="hatchery-banner-container">
-                <img src="{% static 'JUSWZ_login_img/bchatchery_cover 1.png' %}" alt="The Hatchery Banner" class="hatchery-banner">
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{% static 'JUSWZ_login_img/BCLOGO.png' %}" alt="Boston College Logo" class="bc-logo">
             </div>
-        </header>
+            <nav class="sidebar-nav">
+                {% block sidebar_items %}
+                <a href="#" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">Dashboard</a>
+                <a href="#" class="nav-link">My Trainings</a>
+                <a href="#" class="nav-link">My Certifications</a>
+                <a href="#" class="nav-link">Tool Reservations</a>
+                <a href="#" class="nav-link">Issues/Reports</a>
+                <a href="#" class="nav-link">My Waitlists</a>
+                <a href="#" class="nav-link">User Profile</a>
+                {% endblock %}
+            </nav>
+        </aside>
 
-        <!-- Page Content -->
-        <main class="container-fluid py-4">
-            {% block content %}{% endblock %}
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <img src="{% static 'JUSWZ_login_img/bchatchery_cover 1.png' %}" alt="The Hatchery Banner" class="hatchery-banner">
+                {% block content %}{% endblock %}
+            </div>
         </main>
     </div>
 
