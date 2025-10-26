@@ -6,6 +6,24 @@ Comprehensive user profile management system
 
 The profiles app provides a complete user profile management system with viewing, editing, and password change functionality.
 
+## What's New (Security and UX Updates)
+
+#### Direct Admin Access to Manage Users
+- Admins now see a "Manage Users" link in the Account Actions section on their own profile page.
+- Location: `templates/profiles/profile.html` 
+
+#### Admin Role-Change Protection (UI and Backend)
+- If the target user is an admin, the role dropdown is disabled and the Update Role button is disabled.
+- Backend protection prevents role changes through forged POST requests.
+- Locations:
+  - UI: `templates/profiles/admin_profile_management.html` (Role Management section)
+  - Backend: `views.py` → `admin_profile_management` under the `change_role` POST branch
+
+#### Profile Access Protection
+- Users, including admins, can only view their own profile page.
+- Admins must manage other users through the admin pages (`/profiles/admin/...`).
+- Location: `views.py` → `profile_view` (strict self-only access check)
+
 ## Features
 
 ### Profile Management
