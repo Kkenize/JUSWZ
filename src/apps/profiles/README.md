@@ -15,6 +15,13 @@ The profiles app provides a complete user profile management system with viewing
 - Avatar Upload: Support for profile picture uploads
 - Automatic Profile Creation: Profiles are automatically created when users are created
 
+### Admin Management
+- User Search: Search and filter users by name, email, or username
+- Role Management: Promote users to admin or demote admins to user status
+- Profile Administration: Edit any user's profile information
+- Password Administration: Change passwords for any user
+- User Overview: View complete user statistics and information
+
 ## Models
 
 ### Profile Model
@@ -26,6 +33,11 @@ Fields:
 - avatar: Profile picture upload (stored in 'avatars/' directory)
 - phone_number: Contact phone number (max 15 characters)
 - website: Personal website URL (optional)
+
+### UserProfile Model
+Fields:
+- user: One-to-one relationship with Django's User model
+- role: User role (user or admin)
 
 ## Views
 
@@ -56,6 +68,25 @@ Fields:
   - Form validation and error handling
   - Login required
 
+### Admin User Search (`admin_user_search`)
+- URL: `/profiles/admin/users/`
+- Purpose: Search and manage all users
+- Features:
+  - Search users by username, email, or name
+  - Filter users by role
+  - Paginated results display
+  - Admin access only
+
+### Admin Profile Management (`admin_profile_management`)
+- URL: `/profiles/admin/profile/<username>/`
+- Purpose: Manage any user's profile and role
+- Features:
+  - Edit any user's profile information
+  - Change any user's password
+  - Modify user roles
+  - View complete user information
+  - Admin access only
+
 ## Templates
 
 ### Profile Template (`profile.html`)
@@ -66,6 +97,12 @@ Fields:
 
 ### Change Password Template (`change_password.html`)
 - Location: `/src/templates/profiles/change_password.html`
+
+### Admin User Search Template (`admin_user_search.html`)
+- Location: `/src/templates/profiles/admin_user_search.html`
+
+### Admin Profile Management Template (`admin_profile_management.html`)
+- Location: `/src/templates/profiles/admin_profile_management.html`
 
 ## Forms
 
@@ -84,13 +121,34 @@ Fields:
   - Form validation
   - Error handling
 
+### AdminRoleForm
+- Purpose: Handle user role changes
+- Features:
+  - Role selection dropdown
+  - Form validation
+  - Admin access only
+
+### AdminUserSearchForm
+- Purpose: Search and filter users
+- Features:
+  - Text search field
+  - Role filter dropdown
+  - Form validation
+
 ## Admin Interface
 
-The Profile model is registered with Django admin for easy management:
-- List display: user, location, phone_number, website
+The Profile and UserProfile models are registered with Django admin for easy management:
+- Profile list display: user, location, phone_number, website
+- UserProfile list display: user, role
 - Search functionality: username, email, location
-- Filter options: location
+- Filter options: location, role
 - Raw ID fields for user selection
+
+### Custom Admin Interface
+- User search and management outside Django admin
+- Role management interface
+- Profile administration tools
+- Password management for any user
 
 ## Signals
 
@@ -155,6 +213,9 @@ avatar = profile.avatar
     - /profiles/profile/admin/          # View admin's profile
     - /profiles/edit/                   # Edit current user's profile
     - /profiles/change-password/        # Change current user's password
+- Admin URLs:
+    - /profiles/admin/users/            # Search and manage users
+    - /profiles/admin/profile/<username>/ # Manage specific user
 
 ## Future Enhancements
 
