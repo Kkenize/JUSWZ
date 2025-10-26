@@ -10,9 +10,7 @@ def landing_page(request):
 
 @login_required
 def dashboard_redirect(request):
-    """
-    Redirects user to their specific dashboard based on their role.
-    """
+    """Redirects user to their specific dashboard based on their role."""
     user_profile = request.user.userprofile
 
     if user_profile.role == 'admin':
@@ -27,27 +25,29 @@ def dashboard_redirect(request):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard for regular users (role = user)."""
     user_profile = request.user.userprofile
     if user_profile.role != 'user':
         return HttpResponseForbidden("You do not have permission to access this page.")
-    return render(request, 'dashboard/student_dashboard.html')
+    return render(request, 'dashboard/student_dashboard.html', {
+        "user_profile": user_profile
+    })
 
 
 @login_required
 def staff_dashboard(request):
-    """Dashboard for staff (role = staff)."""
     user_profile = request.user.userprofile
     if user_profile.role != 'staff':
         return HttpResponseForbidden("You do not have permission to access this page.")
-    return render(request, 'dashboard/staff_dashboard.html')
+    return render(request, 'dashboard/staff_dashboard.html', {
+        "user_profile": user_profile
+    })
 
 
 @login_required
 def admin_dashboard(request):
-    """Dashboard for admins (role = admin)."""
     user_profile = request.user.userprofile
     if user_profile.role != 'admin':
         return HttpResponseForbidden("You do not have permission to access this page.")
-    return render(request, 'dashboard/admin_dashboard.html')
-
+    return render(request, 'dashboard/admin_dashboard.html', {
+        "user_profile": user_profile
+    })
