@@ -12,10 +12,15 @@ class ProfileEditForm(forms.ModelForm):
     
     class Meta:
         model = Profile
-        fields = ['bio', 'location', 'birth_date', 'avatar', 'phone_number', 'website']
+        fields = ['bio', 'location', 'birth_date', 'avatar', 'phone_number', 'website', 
+                  'major_1', 'major_2', 'minor_1', 'minor_2']
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
             'birth_date': forms.DateInput(attrs={'type': 'date'}),
+            'major_1': forms.TextInput(attrs={'placeholder': 'Enter your primary major'}),
+            'major_2': forms.TextInput(attrs={'placeholder': 'Enter your secondary major (optional)'}),
+            'minor_1': forms.TextInput(attrs={'placeholder': 'Enter your primary minor'}),
+            'minor_2': forms.TextInput(attrs={'placeholder': 'Enter your secondary minor (optional)'}),
         }
     
     def __init__(self, *args, **kwargs):

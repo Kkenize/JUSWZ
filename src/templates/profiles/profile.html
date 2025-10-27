@@ -188,6 +188,32 @@
             </div>
             
             <div class="profile-section">
+                <h3>Academic Information</h3>
+                <div class="profile-info">
+                    {% if profile.majors %}
+                        <div class="info-item">
+                            <div class="info-label">Major(s)</div>
+                            <div class="info-value">
+                                {% for major in profile.majors %}
+                                    {{ major }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if profile.minors %}
+                        <div class="info-item">
+                            <div class="info-label">Minor(s)</div>
+                            <div class="info-value">
+                                {% for minor in profile.minors %}
+                                    {{ minor }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="profile-section">
                 <h3>Personal Details</h3>
                 <div class="profile-info">
                     <div class="info-item">

@@ -187,6 +187,25 @@
         .errorlist li {
             margin-bottom: 5px;
         }
+        .avatar-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #F8F8F8;
+            border-radius: 5px;
+            border: 1px solid #E0E0E0;
+        }
+        .avatar-preview img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #D4AF37;
+            object-fit: cover;
+        }
+        .avatar-preview p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -207,9 +226,23 @@
             {% endif %}
             
             <div class="user-info">
-                <h2>{{ target_user.username }}</h2>
-                <p><strong>Name:</strong> {{ target_user.get_full_name|default:"Not provided" }}</p>
-                <p><strong>Email:</strong> {{ target_user.email }}</p>
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div style="margin-right: 20px;">
+                        {% if profile.avatar %}
+                            <img src="{{ profile.avatar.url }}" alt="{{ target_user.username }}'s avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #D4AF37; object-fit: cover;">
+                        {% else %}
+                            <div style="width: 80px; height: 80px; border-radius: 50%; background: #D4AF37; display: flex; align-items: center; justify-content: center; font-size: 2em; color: #1C1C1C; font-weight: bold;">
+                                {{ target_user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h2 style="margin: 0;">{{ target_user.username }}</h2>
+                        <p style="margin: 5px 0;"><strong>Name:</strong> {{ target_user.get_full_name|default:"Not provided" }}</p>
+                        <p style="margin: 5px 0;"><strong>Email:</strong> {{ target_user.email }}</p>
+                    </div>
+                </div>
+                
                 <p><strong>Role:</strong> 
                     {% if user_profile.role == 'admin' %}
                         <span class="role-badge role-admin">Admin</span>
@@ -219,6 +252,27 @@
                 </p>
                 <p><strong>Joined:</strong> {{ target_user.date_joined|date:"F d, Y" }}</p>
                 <p><strong>Last Login:</strong> {{ target_user.last_login|date:"F d, Y H:i"|default:"Never" }}</p>
+                
+                <!-- Academic Information Display -->
+                {% if profile.majors or profile.minors %}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #E0E0E0;">
+                    <p><strong>Academic Information:</strong></p>
+                    {% if profile.majors %}
+                        <p style="margin: 5px 0;"><strong>Major(s):</strong> 
+                            {% for major in profile.majors %}
+                                {{ major }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                    {% if profile.minors %}
+                        <p style="margin: 5px 0;"><strong>Minor(s):</strong> 
+                            {% for minor in profile.minors %}
+                                {{ minor }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             
             <!-- Profile Editing Section -->
@@ -274,6 +328,39 @@
                     <div class="form-group">
                         <label for="{{ form.avatar.id_for_label }}">Profile Picture</label>
                         {{ form.avatar }}
+                        {% if profile.avatar %}
+                            <div class="avatar-preview">
+                                <p>Current avatar:</p>
+                                <img src="{{ profile.avatar.url }}" alt="Current avatar">
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Academic Information Section -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
+                        <h4 style="color: #1C1C1C; margin-bottom: 15px; font-size: 1.1em;">Academic Information</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="{{ form.major_1.id_for_label }}">Primary Major</label>
+                                {{ form.major_1 }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.major_2.id_for_label }}">Secondary Major</label>
+                                {{ form.major_2 }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="{{ form.minor_1.id_for_label }}">Primary Minor</label>
+                                {{ form.minor_1 }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.minor_2.id_for_label }}">Secondary Minor</label>
+                                {{ form.minor_2 }}
+                            </div>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn">Update Profile</button>
