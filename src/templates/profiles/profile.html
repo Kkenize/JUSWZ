@@ -141,7 +141,7 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            <a href="javascript:history.back()" class="back-button">← Back</a>
+            <a href="{% if profile_user.userprofile.role == 'admin' %}{% url 'dashboard:admin' %}{% elif profile_user.userprofile.role == 'staff' %}{% url 'dashboard:staff' %}{% else %}{% url 'dashboard:student' %}{% endif %}" class="back-button">← Back to Dashboard</a>
             
             <div class="profile-section">
                 <h3>About</h3>
