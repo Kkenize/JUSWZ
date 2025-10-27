@@ -29,7 +29,6 @@ class GoogleLoginCallback(APIView):
             # Prepare the access token request
             data = {
                 'code': code,
-                'callback_url': settings.GOOGLE_OAUTH_CALLBACK_URL
             }
             
             # Process the login directly
