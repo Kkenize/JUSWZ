@@ -370,51 +370,63 @@
             <!-- Password Change Section -->
             <div class="profile-section">
                 <h3>Change Password</h3>
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="change_password" value="1">
-                    
+                
+                {# If target user is admin, disable password change #}
+                {% if user_profile.is_admin %}
                     <div class="form-group">
-                        <label for="{{ password_form.old_password.id_for_label }}">Current Password</label>
-                        {{ password_form.old_password }}
-                        {% if password_form.old_password.errors %}
-                            <ul class="errorlist">
-                                {% for error in password_form.old_password.errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                        <label>Password Change</label>
+                        <div class="form-control" style="background-color: #f8f9fa; color: #6c757d; cursor: not-allowed;">
+                            Password change disabled for admin users
+                        </div>
+                        <div class="help-text">This user is an admin and their password cannot be changed through this interface.</div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="{{ password_form.new_password1.id_for_label }}">New Password</label>
-                        {{ password_form.new_password1 }}
-                        {% if password_form.new_password1.errors %}
-                            <ul class="errorlist">
-                                {% for error in password_form.new_password1.errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                        {% if password_form.new_password1.help_text %}
-                            <div class="help-text">{{ password_form.new_password1.help_text }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
-                        {{ password_form.new_password2 }}
-                        {% if password_form.new_password2.errors %}
-                            <ul class="errorlist">
-                                {% for error in password_form.new_password2.errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
-                    
-                    <button type="submit" class="btn btn-danger">Change Password</button>
-                </form>
+                {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="change_password" value="1">
+                        
+                        <div class="form-group">
+                            <label for="{{ password_form.old_password.id_for_label }}">Current Password</label>
+                            {{ password_form.old_password }}
+                            {% if password_form.old_password.errors %}
+                                <ul class="errorlist">
+                                    {% for error in password_form.old_password.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ password_form.new_password1.id_for_label }}">New Password</label>
+                            {{ password_form.new_password1 }}
+                            {% if password_form.new_password1.errors %}
+                                <ul class="errorlist">
+                                    {% for error in password_form.new_password1.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if password_form.new_password1.help_text %}
+                                <div class="help-text">{{ password_form.new_password1.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
+                            {{ password_form.new_password2 }}
+                            {% if password_form.new_password2.errors %}
+                                <ul class="errorlist">
+                                    {% for error in password_form.new_password2.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-danger">Change Password</button>
+                    </form>
+                {% endif %}
             </div>
             
             <!-- Role Management Section -->

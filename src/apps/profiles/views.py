@@ -152,6 +152,11 @@ def admin_profile_management(request, username):
                 return redirect('profiles:admin_profile_management', username=username)
         
         elif 'change_password' in request.POST:
+            # Admin password protection
+            if user_profile.is_admin:
+                messages.error(request, 'You cannot change the password of an admin user.')
+                return redirect('profiles:admin_profile_management', username=username)
+            
             # Handle password change
             password_form = CustomPasswordChangeForm(target_user, request.POST)
             if password_form.is_valid():
