@@ -8,7 +8,7 @@ def dashboard_redirect(request):
     Redirects user to their specific dashboard based on their role.
     Placeholder: Add logic to check user's role (e.g., from a profile model).
     """
-    return redirect('dashboard_student') # Defaulting to student for now
+    return redirect('dashboard:student') # Defaulting to student for now
 
 def student_dashboard(request):
     return render(request, 'dashboard/student_dashboard.html')
