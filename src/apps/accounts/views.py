@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login, get_user_model, logout
 from django.urls import reverse
+from django.views.decorators.cache import cache_control, never_cache
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -74,11 +75,21 @@ class GoogleLoginCallback(APIView):
             )
 
 
+# Prevents caching and allows a clean redirect to home after logout
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def logout_view(request):
+    """Logs out user and clears browser cache for authenticated pages."""
+    logout(request)
+    return redirect('home')
+
+
+# Landing page for non-logged-in users
 def home_view(request):
     """Landing page with login button"""
     return render(request, "accounts/home.html")
 
 
+# Login page (Google OAuth button)
 def login_view(request):
     """Login page"""
     context = {

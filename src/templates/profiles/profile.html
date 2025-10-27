@@ -244,25 +244,23 @@
             </div>
             
             {% if is_own_profile %}
-            <div class="profile-section">
-                <h3>Account Actions</h3>
-                <div class="info-item">
-                    <div class="info-value">
-                        {# If admin, show admin buttons #}
-                        {% if is_admin %}
-                            <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
-                            <a href="{% url 'profiles:change_password' %}">Change Password</a> |
-                            <a href="{% url 'profiles:admin_user_search' %}">Manage Users</a>
-
-                        {% else %}
-                            {# Normal user sees only these #}
-                            <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
-                            <a href="{% url 'profiles:change_password' %}">Change Password</a>
-                        {% endif %}
-
+                <div class="profile-section">
+                    <h3>Account Actions</h3>
+                    <div class="info-item">
+                        <div class="info-value">
+                            {% if is_admin %}
+                                <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
+                                <a href="{% url 'profiles:change_password' %}">Change Password</a> |
+                                <a href="{% url 'profiles:admin_user_search' %}">Manage Users</a> |
+                                <a href="{% url 'logout' %}">Logout</a>
+                            {% else %}
+                                <a href="{% url 'profiles:edit_profile' %}">Edit Profile</a> |
+                                <a href="{% url 'profiles:change_password' %}">Change Password</a> |
+                                <a href="{% url 'logout' %}">Logout</a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-            </div>
             {% endif %}
         </div>
     </div>

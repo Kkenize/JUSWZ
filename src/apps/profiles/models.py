@@ -6,12 +6,13 @@ from django.contrib.auth.models import User
 class UserProfile(models.Model):
     """Extended user profile with role management"""
     ROLE_CHOICES = [
-        ('user', 'User'),
+        ('student', 'Student'),
+        ('staff', 'Staff'),
         ('admin', 'Admin'),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     
     def __str__(self):
         return f'{self.user.username} - {self.role}'
@@ -19,6 +20,14 @@ class UserProfile(models.Model):
     @property
     def is_admin(self):
         return self.role == 'admin'
+    
+    @property
+    def is_staff(self):
+        return self.role == 'staff'
+    
+    @property
+    def is_student(self):
+        return self.role == 'student'
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
