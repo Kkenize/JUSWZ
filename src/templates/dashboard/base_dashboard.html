@@ -18,7 +18,6 @@
             </div>
             <nav class="sidebar-nav">
                 {% block sidebar_items %}
-                <a href="{% url 'dashboard:landing' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">Home</a>
                 <a href="{% url 'dashboard:student' %}" class="nav-link {% if request.path == '/dashboard/student/' %}active{% endif %}">Student Dashboard</a>
                 <a href="{% url 'dashboard:staff' %}" class="nav-link {% if request.path == '/dashboard/staff/' %}active{% endif %}">Staff Dashboard</a>
                 <a href="{% url 'dashboard:admin' %}" class="nav-link {% if request.path == '/dashboard/admin/' %}active{% endif %}">Admin Dashboard</a>
