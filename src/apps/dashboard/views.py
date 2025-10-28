@@ -32,8 +32,6 @@ def dashboard_redirect(request):
 def student_dashboard(request):
     """Student-only dashboard"""
     user_profile = request.user.userprofile
-    if user_profile.role != 'student':   
-        return HttpResponseForbidden("You do not have permission to access this page.")
     return render(request, 'dashboard/student_dashboard.html', {
         "user_profile": user_profile
     })
