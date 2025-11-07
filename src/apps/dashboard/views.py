@@ -59,3 +59,58 @@ def admin_dashboard(request):
     return render(request, 'dashboard/admin_dashboard.html', {
         "user_profile": user_profile
     })
+
+@never_cache
+@login_required
+def training_management(request):
+    """Accessible by both staff and admin"""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    trainings = [
+    {"name": "3D Printing Training"},
+    {"name": "Textile Training"},
+    {"name": "Laser Training"},
+    {"name": "Vinyl Training"},
+    {"name": "2D Printing Training"},
+    {"name": "Woodworking Training"},
+    {"name": "Electronics Training"},
+    {"name": "Metalworking Training"},
+    ]
+    return render(request, "training/training_management.html", {
+        "user_profile": user_profile,
+        "trainings": trainings
+    })
+    
+@never_cache
+@login_required
+def calendar_add(request):
+    """Base calendar for adding training sessions"""
+    user_profile = request.user.userprofile
+    return render(request, 'training/calendar_add.html', {
+        "user_profile": user_profile,
+        "page_title": "Add Training Calendar"
+    })
+
+
+@never_cache
+@login_required
+def calendar_edit(request):
+    """Base calendar for editing training sessions"""
+    user_profile = request.user.userprofile
+    return render(request, 'training/calendar_edit.html', {
+        "user_profile": user_profile,
+        "page_title": "Edit Training Calendar"
+    })
+
+
+@never_cache
+@login_required
+def calendar_remove(request):
+    """Base calendar for removing training sessions"""
+    user_profile = request.user.userprofile
+    return render(request, 'training/calendar_remove.html', {
+        "user_profile": user_profile,
+        "page_title": "Remove Training Calendar"
+    })
+

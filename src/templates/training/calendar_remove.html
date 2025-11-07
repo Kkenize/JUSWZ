@@ -1,0 +1,8 @@
+{% extends 'training/base_calendar.html' %}
+{% block action_button %}
+<button class="btn text-white" style="background-color:#c0392b;">Remove Session</button>
+{% endblock %}
+{% block title %}Remove Training Session - BC Hatchery{% endblock %}
+{% with page_title="Remove Training Calendar" %}
+  {{ block.super }}
+{% endwith %}

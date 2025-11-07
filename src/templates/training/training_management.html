@@ -1,0 +1,681 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Training Management - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Training Management</h1>
+      <p class="text-muted" id="greeting-text">Manage training levels, attendance, and materials</p>
+    </div>
+
+    <div class="d-flex align-items-center">
+      <input id="trainingSearch" type="text" class="form-control me-2" placeholder="Search trainings..." style="max-width: 280px;" />
+      <button class="btn btn-bc-gold text-white">Search</button>
+    </div>
+  </div>
+
+  <!-- ===== TRAINING CONTAINER ===== -->
+  <div id="trainingContainer" class="d-flex flex-column gap-4">
+
+    <!-- 3D Printing Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">3D Printing Training</h4>
+          <ul class="list-unstyled" id="levelList3D" style="cursor: pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="3d-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2a">Level 2 High-Detail Resin</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2b">Level 2 Multi-Material</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level3">Level 3 Training</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+          <!-- Level 1 -->
+          <div id="3d-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Intro to 3D Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/3D_Printing_level_1.jpg' %}"
+                     alt="Lvl 1 – Intro to 3D Printing Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 High-Detail Resin -->
+          <div id="3d-level2a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – High-Detail Resin 3D Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/3D_Printing_level_2_Resin.jpg' %}"
+                     alt="Lvl 2 – High-Detail Resin 3D Printing Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Multi-Material -->
+          <div id="3d-level2b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Multi-Material 3D Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/3D_Printing_level_2_Material.jpg' %}"
+                     alt="Lvl 2 – Multi-Material 3D Printing Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 3 -->
+          <div id="3d-level3" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 3 – Photo-Realistic 3D Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/3D_Printing_level_3.png' %}"
+                     alt="Lvl 3 – Photo-Realistic 3D Printing Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Textile Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Textile Training</h4>
+          <ul class="list-unstyled" id="levelListTextile" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="textile-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="textile-level2">Level 2 Training</li>
+          </ul>
+        </div>
+
+        <div class="col-md-9">
+          <!-- Level 1 -->
+          <div id="textile-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Sewing Machine Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Sewing_1.jpg' %}"
+                     alt="Lvl 1 – Sewing Machine Basics Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 -->
+          <div id="textile-level2" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Embroidery Machine Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Sewing_2.jpg' %}"
+                     alt="Lvl 2 – Embroidery Machine Training"
+                     class="rounded shadow-sm w-100"
+                     style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Laser Cutter Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Laser Cutter Training</h4>
+          <ul class="list-unstyled" id="levelListLaser" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="laser-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2a">Level 2 Rotary</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2b">Level 2 UV</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+          <!-- Level 1 -->
+          <div id="laser-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Laser Cutting Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Laser_level_1.jpg' %}"
+                    alt="Lvl 1 – Laser Cutting Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Rotary -->
+          <div id="laser-level2a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Laser Cutter Rotary Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Laser_Rotary_Level_2.png' %}"
+                    alt="Lvl 2 – Laser Cutter Rotary Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 UV -->
+          <div id="laser-level2b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Multi-Surface UV Printer Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Laser_UV_Level_2.png' %}"
+                    alt="Lvl 2 – Multi-Surface UV Printer Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Vinyl Cutter Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Vinyl Cutter Training</h4>
+          <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="vinyl-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2a">Level 2 Garment</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2b">Level 2 Sticker</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+          <!-- Level 1 -->
+          <div id="vinyl-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Vinyl Cutting Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Vinyl_Level_1.png' %}"
+                    alt="Lvl 1 – Vinyl Cutting Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Garment -->
+          <div id="vinyl-level2a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Direct-to-Garment Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Vinyl_Garment_Level_2.jpg' %}"
+                    alt="Lvl 2 – Direct-to-Garment Printing Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Sticker -->
+          <div id="vinyl-level2b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Sticker Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Vinyl_Sticker_Level_2.jpg' %}"
+                    alt="Lvl 2 – Sticker Printing Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2D Printing Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">2D Printing Training</h4>
+          <ul class="list-unstyled" id="levelList2D" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="printing-level1">Level 1 Training</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+          <!-- Level 1 -->
+          <div id="printing-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Screen Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Screen_Painting_Level_1.png' %}"
+                    alt="Lvl 1 – Screen Printing Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Woodworking Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Woodworking Training</h4>
+          <ul class="list-unstyled" id="levelListWood" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="wood-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2a">Level 2 CNC</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2b">Level 2 Intermediate</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2c">Level 2 Chisel</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3a">Level 3 Advanced</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3b">Level 3 Lathe</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+
+          <!-- Level 1 -->
+          <div id="wood-level1" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Woodworking Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_Level_1.jpg' %}"
+                    alt="Lvl 1 – Woodworking Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 CNC -->
+          <div id="wood-level2a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – CNC Routing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_CNC_Level_2.png' %}"
+                    alt="Lvl 2 – CNC Routing Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Intermediate -->
+          <div id="wood-level2b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Intermediate Woodworking Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_Intermediate_Level_2.jpg' %}"
+                    alt="Lvl 2 – Intermediate Woodworking Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Chisel -->
+          <div id="wood-level2c" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Chisel & Plane Training (In Development)</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_Chisel_Level_2.png' %}"
+                    alt="Lvl 2 – Chisel & Plane Training (In Development)"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <button class="btn text-white" style="background-color:#55595c;" disabled>In Development</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 3 Advanced -->
+          <div id="wood-level3a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 3 – Advanced Woodworking Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_Advanced_Level_3.jpg' %}"
+                    alt="Lvl 3 – Advanced Woodworking Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 3 Lathe -->
+          <div id="wood-level3b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 3 – Wood Lathe Training (In Development)</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Wood_Work_Lathe_Level_3.jpg' %}"
+                    alt="Lvl 3 – Wood Lathe Training (In Development)"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <button class="btn text-white" style="background-color:#55595c;" disabled>In Development</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Electronics Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Electronics Training</h4>
+          <ul class="list-unstyled" id="levelListElectronics" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="electronics-level1a">Level 1 Circuitry</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level1b">Level 1 Soldering</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level2">Level 2 Training</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+          <!-- Level 1 Circuitry -->
+          <div id="electronics-level1a" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Circuitry Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Electronics_Circuitry_Level_1.jpg' %}"
+                    alt="Lvl 1 – Circuitry Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 1 Soldering -->
+          <div id="electronics-level1b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 1 – Soldering Basics Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Electronics_Soldering_Level_1.jpg' %}"
+                    alt="Lvl 1 – Soldering Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Training -->
+          <div id="electronics-level2" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Circuitry 2 Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Electronics_Level_2.jpg' %}"
+                    alt="Lvl 2 – Circuitry 2 Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metalworking Training -->
+    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+      <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-3 border-end">
+          <h4 class="fw-bold mb-3 training-title">Metalworking Training</h4>
+          <ul class="list-unstyled" id="levelListMetal" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="metal-level1a">Level 1 Waterjet</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level1b">Level 1 Machining</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2a">Level 2 Conversational</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2b">Level 2 CAM</li>
+          </ul>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-9">
+
+          <!-- Level 1 Waterjet -->
+          <div id="metal-level1a" class="training-level active">
+            <h5 class="fw-bold mb-3">Lvl 1 – Waterjet Cutting Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Metalworking_Waterjet_Level_1.jpg' %}"
+                    alt="Lvl 1 – Waterjet Cutting Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 1 Machining (In Development) -->
+          <div id="metal-level1b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 1 – Machining Basics Training (In Development)</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Metalworking_Machining_Level_1.jpg' %}"
+                    alt="Lvl 1 – Machining Basics Training (In Development)"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <button class="btn text-white" style="background-color:#55595c;" disabled>In Development</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 Conversational (In Development) -->
+          <div id="metal-level2a" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – Conversational Programming Training (In Development)</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/MetalWorking_Conversational_Level_2.jpg' %}"
+                    alt="Lvl 2 – Conversational Programming Training (In Development)"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <button class="btn text-white" style="background-color:#55595c;" disabled>In Development</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 2 CAM (In Development) -->
+          <div id="metal-level2b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 2 – CAM Programming Training (In Development)</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Metalworking_CAM_Level_2.jpg' %}"
+                    alt="Lvl 2 – CAM Programming Training (In Development)"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <button class="btn text-white" style="background-color:#55595c;" disabled>In Development</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Greeting
+  const greeting = document.getElementById("greeting-text");
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  let role = "{{ user_profile.role|title }}";
+  if (role === "Staff") role = "Team Member";
+  greeting.textContent = `${timeGreeting}, ${role}!`;
+
+  // Handle per-card level toggling
+  document.querySelectorAll("[id^='levelList']").forEach(list => {
+    const items = list.querySelectorAll("li");
+    items.forEach(item => {
+      item.addEventListener("click", () => {
+        items.forEach(li => li.classList.remove("active-level"));
+        const card = list.closest(".training-card");
+        card.querySelectorAll(".training-level").forEach(lv => lv.style.display = "none");
+        item.classList.add("active-level");
+        const target = card.querySelector("#" + item.dataset.target);
+        if (target) target.style.display = "block";
+      });
+    });
+  });
+
+  // Live Search Filter
+  const searchInput = document.getElementById("trainingSearch");
+  const cards = document.querySelectorAll(".training-card");
+  searchInput.addEventListener("input", function() {
+    const query = searchInput.value.trim().toLowerCase();
+    cards.forEach(card => {
+      const title = card.querySelector(".training-title").textContent.toLowerCase();
+      card.style.display = title.includes(query) || query === "" ? "block" : "none";
+    });
+  });
+});
+</script>
+
+<!-- CSS -->
+<style>
+  [id^="levelList"] li {transition: background 0.2s, color 0.2s;}
+  [id^="levelList"] li:hover {background-color:#f8f9fa;}
+  .active-level {background-color:#c9a64d!important;color:white!important;font-weight:600;}
+  .btn:hover {opacity:0.9;transition:opacity 0.15s ease-in-out;}
+</style>
+
+{% endblock %}

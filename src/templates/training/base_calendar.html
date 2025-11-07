@@ -1,0 +1,214 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Training Calendar - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+    <div>
+      <!-- Back Button -->
+      <a href="{% url 'dashboard:training_management' %}" 
+         class="btn btn-back mb-3">
+        ← Back to Training Management
+      </a>
+
+      <h1 class="fw-bold mb-1">{{ page_title }}</h1>
+      <p class="text-muted">Manage training sessions through the calendar below.</p>
+    </div>
+
+    {% block action_button %}
+    {% endblock %}
+  </div>
+
+  <div class="calendar-container shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<!-- FullCalendar CDN -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 600,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    selectable: true,
+    selectMirror: true,
+    select: function(info) {
+      alert('Selected: ' + info.startStr + ' to ' + info.endStr);
+    },
+    events: [
+      { title: 'Lvl 1 Training', start: '2025-11-10' },
+      { title: 'Lvl 2 – Resin Training', start: '2025-11-15' },
+      { title: 'Lvl 3 – Photo Realistic', start: '2025-11-22' }
+    ]
+  });
+  calendar.render();
+});
+</script>
+
+<style>
+  body {
+    background-color: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ---- UNIVERSAL BUTTON ANIMATION ---- */
+  .btn, .fc-button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-transform: capitalize !important;
+    transition:
+      background-color 0.2s ease,
+      transform 0.15s ease,
+      box-shadow 0.15s ease !important;
+  }
+
+  /* ---- GOLD BUTTONS (Add, Back, Calendar) ---- */
+  .btn-back,
+  .btn-bc-gold,
+  .fc-button-primary {
+    background-color: #c9a64d !important;
+    border: none !important;
+    color: white !important;
+  }
+
+  .btn:hover,
+  .fc-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn:active,
+  .fc-button-primary:active {
+    transform: scale(0.96);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-back:hover,
+  .btn-bc-gold:hover,
+  .fc-button-primary:hover {
+    background-color: #d7b965 !important;
+  }
+
+  .btn-back:active,
+  .btn-bc-gold:active,
+  .fc-button-primary:active {
+    background-color: #e6cb7b !important;
+  }
+
+  /* ---- GREY BUTTON (Edit) ---- */
+  .btn-edit {
+    background-color: #55595c !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .btn-edit:hover {
+    background-color: #6c757d !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-edit:active {
+    transform: scale(0.96);
+    background-color: #868e96 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ---- RED BUTTON (Remove) ---- */
+  .btn-remove {
+    background-color: #c0392b !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .btn-remove:hover {
+    background-color: #d9534f !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-remove:active {
+    transform: scale(0.96);
+    background-color: #e57373 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ---- CALENDAR STYLING ---- */
+  .calendar-container {
+    background-color: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 25px;
+  }
+
+  #calendar {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Toolbar */
+  .fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: 600;
+    color: #222;
+  }
+
+  /* Day cells */
+  .fc-daygrid-day {
+    background-color: #fff !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* Today highlight */
+  .fc-day-today {
+    background-color: #fff9e9 !important;
+    border: 1px solid #f2d56f !important;
+  }
+
+  /* Event blocks */
+  .fc-event {
+    background-color: #c9a64d !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 2px 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease;
+  }
+
+  .fc-event:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .fc-event:active {
+    transform: scale(0.97);
+  }
+
+  /* Day headers */
+  .fc-col-header-cell-cushion {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+
+  .fc-daygrid-day-number {
+    color: #555;
+    font-weight: 500;
+  }
+
+  /* Layout padding */
+  .container-fluid {
+    padding-bottom: 3rem;
+  }
+</style>
+{% endblock %}
