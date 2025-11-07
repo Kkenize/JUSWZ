@@ -97,3 +97,9 @@ def login_view(request):
         "google_callback_uri": settings.GOOGLE_OAUTH_CALLBACK_URL,
     }
     return render(request, "accounts/login.html", context)
+
+
+# Learn More page
+def learn_more_view(request):
+    """Learn More page"""
+    return render(request, "accounts/learn_more.html")

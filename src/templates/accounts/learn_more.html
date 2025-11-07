@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BC Hatchery - Learn More</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #333;
+            background: #fff;
+            line-height: 1.6;
+            font-weight: bold;
+        }
+        
+        /* TOP NAV BAR (Medium Size + Sticky) */
+        .top-bar {
+            background: white;
+            color: #333;
+            padding: 15px 0; /* Increased padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 100px; /* Medium Height */
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            padding-left: 25px;
+            gap: 25px;
+        }
+        
+        .logo-section img {
+            height: 80px; /* Medium logo size */
+            width: auto;
+        }
+        
+        .logo-section a {
+            font-size: 22px; /* Bigger Home text */
+            color: #333;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            padding-right: 25px;
+        }
+        
+        .nav-right a {
+            color: #333;
+            text-decoration: none;
+            font-size: 22px; /* Bigger Log in text */
+            font-weight: 700;
+        }
+        
+        .search-bar {
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            padding: 10px 16px; /* Bigger search box */
+            border-radius: 4px;
+            width: 230px; /* Wider search */
+        }
+        
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 18px;
+            background: transparent;
+        }
+        
+        /* MAIN CONTENT BELOW NAV */
+        .main-content {
+            padding: 60px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+        
+        .section {
+            width: 100%;
+        }
+        
+        .section-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .mission-statement {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #333;
+            text-align: justify;
+            padding: 30px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .form-link {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 20px 0;
+            transition: background 0.3s;
+        }
+        
+        .form-link:hover {
+            background: #222;
+        }
+        
+        .form-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .testimonials {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .testimonial {
+            padding: 25px;
+            background: #f5f5f5;
+            border-left: 4px solid #333;
+            border-radius: 6px;
+        }
+        
+        .testimonial-course {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .testimonial-description {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        .testimonial-quote {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #333;
+            font-style: italic;
+            padding-left: 20px;
+            border-left: 3px solid #333;
+        }
+        
+        .testimonial-club {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .mission-banner {
+            width: 100vw;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .mission-banner-container {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .image-container {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .image-container img {
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAV BAR -->
+    <div class="top-bar">
+        <div class="logo-section">
+            <img src="{% static 'JUSWZ_login_img/BCLOGO.png' %}" alt="BC Logo">
+            <a href="{% url 'home' %}">Home</a>
+        </div>
+
+        <div class="nav-right">
+            <a href="{% url 'login' %}">Log in</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission Banner -->
+    <div class="mission-banner-container">
+        <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1920&h=400&fit=crop" alt="Makerspace workshop" class="mission-banner">
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <!-- Mission Statement Section -->
+        <div class="section">
+            <h1 class="section-title">Mission Statement</h1>
+            <div class="mission-statement">
+                In the spirit of 'Think to Make for Impact,' being able to iterate, visualize, refine, and communicate creative design ideas using prototypes is an essential skill set for our students entering the future workforce. The mission of the Boston College (BC) Makerspaces (The Hatchery) is to enable these transformative capabilities, irrespective of background or discipline, by providing an equitable, accessible, and well-equipped community-oriented space for all. Wherever you are on your making and design journey, The Hatchery Makerspaces at Boston College encourages all members of the community to let their ideas fly.
+            </div>
+        </div>
+
+        <!-- Course Collaboration Section -->
+        <div class="section">
+            <h2 class="section-title">Course Collaboration</h2>
+            <div class="image-container">
+                <img src="https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=350&h=200&fit=crop" alt="3D printing and prototyping">
+                <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=350&h=200&fit=crop" alt="Students collaborating">
+                <img src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=350&h=200&fit=crop" alt="Laser cutting and fabrication">
+            </div>
+            <div class="form-section">
+                <p style="font-size: 18px; margin-bottom: 20px;">Interested in incorporating The Hatchery into your credit-bearing course?</p>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfzHgVnqGo7cLxD11DGZbRxrR1IwomzjM9VS-gvWS2bsAlBGw/viewform" target="_blank" class="form-link">Course Collaboration Form</a>
+            </div>
+            
+            <div class="testimonials">
+                <div class="testimonial">
+                    <div class="testimonial-course">Introduction to Product Design</div>
+                    <div class="testimonial-description">
+                        Students in this course utilized The Hatchery's 3D printing facilities and laser cutters to create functional prototypes of their product designs. They worked on developing ergonomic phone cases and sustainable packaging solutions, bringing their CAD models to life through hands-on making.
+                    </div>
+                    <div class="testimonial-quote">
+                        "The Hatchery transformed our classroom experience. Students were able to see their designs come to life in ways that weren't possible before. The prototyping process became an integral part of their learning journey, and the staff's support was invaluable." - Professor Sarah Chen
+                    </div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-course">Engineering Design Studio</div>
+                    <div class="testimonial-description">
+                        Engineering students collaborated at The Hatchery to build working prototypes of assistive devices for individuals with disabilities. They used the woodworking tools, electronics equipment, and fabrication resources to create functional prototypes that were tested with community partners.
+                    </div>
+                    <div class="testimonial-quote">
+                        "The Hatchery provided our students with the tools and space to think beyond theory. Watching them iterate on their designs, test prototypes, and refine their solutions in real-time was incredible. This hands-on experience is exactly what prepares them for industry." - Professor Michael Rodriguez
+                    </div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-course">Digital Fabrication in Art</div>
+                    <div class="testimonial-description">
+                        Art students explored the intersection of traditional art and digital fabrication, using The Hatchery's CNC machines and vinyl cutters to create large-scale installations. They experimented with materials and techniques to produce interactive art pieces that were displayed in campus galleries.
+                    </div>
+                    <div class="testimonial-quote">
+                        "The Hatchery opened up entirely new possibilities for artistic expression. Our students pushed boundaries and created work that wouldn't have been possible without access to these tools. The collaborative atmosphere fostered incredible creativity and innovation." - Professor Emily Watson
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Collaboration Section -->
+        <div class="section">
+            <h2 class="section-title">Event Collaboration</h2>
+            <div class="image-container">
+                <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=350&h=200&fit=crop" alt="Student event and collaboration">
+                <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=350&h=200&fit=crop" alt="Creative workshop">
+                <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=350&h=200&fit=crop" alt="Community event">
+            </div>
+            <div class="form-section">
+                <p style="font-size: 18px; margin-bottom: 20px;">Planning an event with your student organization? Partner with The Hatchery!</p>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScDCvfSsRIToBUbWSZlCaVesxJ4njT6vxef8veoQ8lqSBVqwg/viewform" target="_blank" class="form-link">Event Collaboration Form</a>
+            </div>
+            
+            <div class="testimonials">
+                <div class="testimonial">
+                    <div class="testimonial-club">Asian Caucus</div>
+                    <div class="testimonial-description">
+                        Asian Caucus organized a cultural celebration event at The Hatchery, where members created traditional-inspired decorations and interactive displays using the makerspace's tools. They designed and fabricated lanterns, banners, and cultural artifacts that enhanced their event's atmosphere.
+                    </div>
+                    <div class="testimonial-quote">
+                        "The Hatchery helped us bring our vision to life in ways we never imagined. The staff was incredibly supportive, and having access to professional tools allowed us to create decorations that truly represented our culture. Our event was more meaningful because of the personal touch we were able to add." - Asian Caucus Event Coordinator
+                    </div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-club">Center for Student Wellness</div>
+                    <div class="testimonial-description">
+                        The Center for Student Wellness hosted a mindfulness and creativity workshop at The Hatchery, where students created personalized stress-relief tools and meditation aids. Participants used the space to craft custom fidget devices, aromatherapy diffusers, and calming visual art pieces.
+                    </div>
+                    <div class="testimonial-quote">
+                        "Combining wellness practices with hands-on making was transformative. Students found the process of creating something with their hands to be incredibly therapeutic. The Hatchery provided the perfect environment for this unique approach to self-care and mental health awareness." - Center for Student Wellness Director
+                    </div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-club">The Golden Eagles Dance Team</div>
+                    <div class="testimonial-description">
+                        The Golden Eagles Dance Team collaborated with The Hatchery to design and fabricate custom props and stage elements for their annual performance. They created lightweight, durable props including illuminated accessories and modular set pieces that enhanced their choreography.
+                    </div>
+                    <div class="testimonial-quote">
+                        "Working with The Hatchery elevated our performance to a whole new level. The props we created were not only beautiful but perfectly suited to our choreography. The ability to prototype and refine our designs ensured everything worked flawlessly on stage. It was a game-changer for our team." - Golden Eagles Dance Team Captain
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+
