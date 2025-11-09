@@ -280,6 +280,7 @@ def calendar_add(request):
         "form": TrainingSessionForm(initial=initial) if initial else TrainingSessionForm(),
         "training_sessions": training_sessions,
         "selected_title": pre_title or "",
+        "calendar_mode": "add",
     })
 
 
@@ -301,6 +302,7 @@ def calendar_edit(request):
         "user_profile": user_profile,
         "page_title": "Edit Training Calendar",
         "form": TrainingSessionForm(instance=training) if training else None,
+        "calendar_mode": "edit",
     })
 
 
@@ -309,15 +311,37 @@ def calendar_edit(request):
 def calendar_remove(request):
     """Base calendar for removing training sessions"""
     user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    trainings_qs = Training.objects.all().order_by('-date', '-start_time')
+    training_sessions = [
+        {
+            "id": t.id,
+            "title": t.title,
+            "date": t.date.isoformat(),
+            "start_time": t.start_time.strftime("%H:%M"),
+            "end_time": t.end_time.strftime("%H:%M"),
+            "capacity": t.capacity,
+        }
+        for t in trainings_qs
+    ]
+
     if request.method == 'POST':
         training_id = request.POST.get('id')
         if training_id:
-            Training.objects.filter(id=training_id, instructor=request.user).delete()
+            deleted, _ = Training.objects.filter(id=training_id).delete()
+            if deleted:
+                messages.success(request, "Training session removed.")
+            else:
+                messages.warning(request, "Could not find that training session to remove.")
             return redirect('dashboard:training_management')
             
     return render(request, 'training/calendar_remove.html', {
         "user_profile": user_profile,
         "page_title": "Remove Training Calendar",
+        "training_sessions": training_sessions,
+        "calendar_mode": "remove",
     })
 
 
