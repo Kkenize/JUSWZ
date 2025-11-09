@@ -1,0 +1,240 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}All Trainings - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3 all-trainings-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">{{ page_title }}</h1>
+      <p class="text-muted mb-0">Review every scheduled training session and run quick bulk actions.</p>
+    </div>
+    <a href="{% url 'dashboard:training_management' %}" class="btn btn-outline-secondary back-to-training">
+      ← Back to Training Management
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      {% if messages %}
+        <div class="mb-3">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="bulk-toolbar sticky-top bg-white py-3 border rounded px-3 mb-3">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+          <div class="form-check m-0">
+            <input class="form-check-input" type="checkbox" value="" id="selectAllTrainings">
+            <label class="form-check-label fw-semibold" for="selectAllTrainings">
+              Select all trainings
+            </label>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button id="bulkEditBtn" class="btn btn-bc-gold text-white btn-sm px-3" type="button">Edit Selected</button>
+            <button id="bulkRemoveBtn" class="btn btn-outline-danger btn-sm px-3" type="button">Remove Selected</button>
+          </div>
+          <span class="text-muted small ms-lg-auto" id="selectedCount">0 selected</span>
+        </div>
+        <div id="bulk-warning" class="alert alert-warning py-2 px-3 mt-3 mb-0 d-none" role="alert"></div>
+      </div>
+
+      <div class="table-responsive training-table-wrapper">
+        <table class="table table-borderless align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" style="width:40px;"></th>
+              <th scope="col">Title</th>
+              <th scope="col">Date</th>
+              <th scope="col">Start</th>
+              <th scope="col">End</th>
+              <th scope="col">Capacity</th>
+              <th scope="col" class="text-end">Quick actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for training in trainings %}
+              <tr class="training-row">
+                <td>
+                  <input class="form-check-input training-checkbox" type="checkbox" value="{{ training.id }}">
+                </td>
+                <td class="fw-semibold">{{ training.title }}</td>
+                <td>{{ training.date|date:"M j, Y" }}</td>
+                <td>{{ training.start_time|time:"P" }}</td>
+                <td>{{ training.end_time|time:"P" }}</td>
+                <td>{{ training.capacity }}</td>
+                <td class="text-end">
+                  <a href="{% url 'dashboard:calendar_edit' %}?id={{ training.id }}" class="btn btn-outline-secondary btn-sm me-1">Edit</a>
+                  <form method="post" action="{% url 'dashboard:calendar_remove' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ training.id }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  No scheduled trainings yet. Use the Add Training Calendar to create sessions.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="bulk-edit-form" method="get" action="{% url 'dashboard:training_bulk_edit' %}">
+  <input type="hidden" name="ids" id="bulk-edit-ids">
+</form>
+<form id="bulk-remove-form" method="post" action="{% url 'dashboard:training_bulk_remove' %}">
+  {% csrf_token %}
+  <input type="hidden" name="ids" id="bulk-remove-ids">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAllTrainings');
+  const selectedCount = document.getElementById('selectedCount');
+  const bulkWarning = document.getElementById('bulk-warning');
+  const editBtn = document.getElementById('bulkEditBtn');
+  const removeBtn = document.getElementById('bulkRemoveBtn');
+  const editForm = document.getElementById('bulk-edit-form');
+  const removeForm = document.getElementById('bulk-remove-form');
+  const editInput = document.getElementById('bulk-edit-ids');
+  const removeInput = document.getElementById('bulk-remove-ids');
+
+  function updateCount() {
+    const checked = document.querySelectorAll('.training-checkbox:checked').length;
+    selectedCount.textContent = `${checked} selected`;
+    if (!selectAll) return;
+    const total = document.querySelectorAll('.training-checkbox').length;
+    if (checked === 0) {
+      selectAll.indeterminate = false;
+      selectAll.checked = false;
+    } else if (checked === total) {
+      selectAll.indeterminate = false;
+      selectAll.checked = true;
+    } else {
+      selectAll.indeterminate = true;
+    }
+  }
+
+  function showWarning(message) {
+    if (!bulkWarning) return;
+    bulkWarning.textContent = message;
+    bulkWarning.classList.remove('d-none');
+  }
+
+  function clearWarning() {
+    if (!bulkWarning) return;
+    bulkWarning.textContent = '';
+    bulkWarning.classList.add('d-none');
+  }
+
+  function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.training-checkbox:checked')).map(cb => cb.value);
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      const checkboxes = document.querySelectorAll('.training-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+      });
+      updateCount();
+    });
+  }
+
+  document.querySelectorAll('.training-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateCount);
+  });
+
+  if (editBtn) {
+    editBtn.addEventListener('click', function() {
+      clearWarning();
+      const ids = getSelectedIds();
+      if (!ids.length) {
+        showWarning('Select at least one training before editing.');
+        return;
+      }
+      if (editInput && editForm) {
+        editInput.value = ids.join(',');
+        editForm.submit();
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      clearWarning();
+      const ids = getSelectedIds();
+      if (!ids.length) {
+        showWarning('Select at least one training before removing.');
+        return;
+      }
+      if (!confirm('Remove the selected trainings? This action cannot be undone.')) {
+        return;
+      }
+      if (removeInput && removeForm) {
+        removeInput.value = ids.join(',');
+        removeForm.submit();
+      }
+    });
+  }
+});
+</script>
+
+<style>
+  .all-trainings-page .card {
+    border-radius: 18px;
+  }
+
+  .bulk-toolbar {
+    position: sticky;
+    top: 64px;
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .training-table-wrapper {
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+  }
+
+  .training-row {
+    border-bottom: 1px solid #f0ebe0;
+  }
+
+  .training-row:last-child {
+    border-bottom: none;
+  }
+
+  .training-row td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .training-row:hover {
+    background-color: #fffdf6;
+  }
+
+  @media (max-width: 767.98px) {
+    .bulk-toolbar {
+      top: 58px;
+    }
+
+    .training-table-wrapper {
+      max-height: none;
+    }
+  }
+</style>
+{% endblock %}

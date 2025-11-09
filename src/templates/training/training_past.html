@@ -1,0 +1,151 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Past Trainings - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">{{ page_title }}</h1>
+      <p class="text-muted mb-0">Review outcomes from every session you hosted or attended and take quick follow-up actions.</p>
+    </div>
+    <a href="{% url 'dashboard:training_management' %}" class="btn btn-outline-secondary">
+      ← Back to Training Management
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-6 col-lg-4">
+          <label for="filterSelect" class="form-label small fw-semibold text-muted">Filter</label>
+          <select name="filter" id="filterSelect" class="form-select">
+            <option value="hosted" {% if filter_mode == 'hosted' %}selected{% endif %}>Hosted by me</option>
+            {% if user_profile.role == 'admin' %}
+              <option value="all" {% if filter_mode == 'all' %}selected{% endif %}>All past trainings</option>
+            {% endif %}
+          </select>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <label for="sortSelect" class="form-label small fw-semibold text-muted">Sort by</label>
+          <select name="sort" id="sortSelect" class="form-select">
+            <option value="recent" {% if sort_mode == 'recent' %}selected{% endif %}>Most recent</option>
+            <option value="attendance" {% if sort_mode == 'attendance' %}selected{% endif %}>Attendance</option>
+            <option value="title" {% if sort_mode == 'title' %}selected{% endif %}>Title A–Z</option>
+          </select>
+        </div>
+        <div class="col-12 col-lg-4 d-flex gap-2">
+          <button type="submit" class="btn btn-bc-gold text-white flex-grow-1">Apply</button>
+          <a href="{% url 'dashboard:training_past' %}" class="btn btn-outline-secondary flex-grow-1">Reset</a>
+        </div>
+      </form>
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-outline-secondary btn-sm">Export Attendance</button>
+        <button class="btn btn-outline-secondary btn-sm">Send Follow-Up Survey</button>
+        <button class="btn btn-outline-secondary btn-sm">Mark Completion</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="stat-card p-4 h-100">
+        <p class="text-muted text-uppercase small mb-1">Sessions Given</p>
+        <h3 class="fw-bold mb-0">{{ stats.total_sessions }}</h3>
+        <small class="text-muted">Past trainings matching your filter</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card p-4 h-100">
+        <p class="text-muted text-uppercase small mb-1">Attendance Rate</p>
+        <div class="d-flex align-items-center gap-3">
+          <h3 class="fw-bold mb-0">{{ stats.attendance_rate }}%</h3>
+          <div class="progress flex-grow-1" style="height: 8px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ stats.attendance_rate }}%;" aria-valuenow="{{ stats.attendance_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+        <small class="text-muted">{{ stats.total_attendance }} total attendees</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card p-4 h-100">
+        <p class="text-muted text-uppercase small mb-1">Completion Rate</p>
+        <div class="d-flex align-items-center gap-3">
+          <h3 class="fw-bold mb-0">{{ stats.completion_rate }}%</h3>
+          <div class="progress flex-grow-1" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ stats.completion_rate }}%;" aria-valuenow="{{ stats.completion_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+        <small class="text-muted">Based on certified attendees</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Training</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Attendance</th>
+              <th>Completion</th>
+              <th>No-shows</th>
+              <th>Feedback</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for training in trainings %}
+              <tr>
+                <td class="fw-semibold">{{ training.obj.title }}</td>
+                <td>{{ training.obj.date|date:"M j, Y" }}</td>
+                <td>{{ training.obj.start_time|time:"P" }} – {{ training.obj.end_time|time:"P" }}</td>
+                <td>{{ training.attendance_summary }}</td>
+                <td>{{ training.completion_summary }}</td>
+                <td>{{ training.no_shows }}</td>
+                <td>
+                  {% if training.has_feedback %}
+                    <button class="btn btn-outline-secondary btn-sm">View Feedback</button>
+                  {% else %}
+                    <span class="text-muted small">No feedback</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  No past trainings match your filter yet.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .stat-card {
+    border-radius: 16px;
+    background-color: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    border: 1px solid #f0ebdf;
+  }
+
+  .progress-bar {
+    background-color: #c9a64d;
+  }
+
+  @media (max-width: 767.98px) {
+    .d-flex.flex-column.flex-lg-row > .btn,
+    .d-flex.flex-column.flex-lg-row > a {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}

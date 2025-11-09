@@ -7,15 +7,25 @@
 <div class="container-fluid px-4 py-3">
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mt-3 mb-4">
     <div>
       <h1 class="fw-bold mb-1">Training Management</h1>
       <p class="text-muted" id="greeting-text">Manage training levels, attendance, and materials</p>
     </div>
 
-    <div class="d-flex align-items-center">
-      <input id="trainingSearch" type="text" class="form-control me-2" placeholder="Search trainings..." style="max-width: 280px;" />
-      <button class="btn btn-bc-gold text-white">Search</button>
+    <div class="d-flex flex-wrap align-items-center justify-content-lg-end gap-2 w-100 w-lg-auto">
+      <div class="d-flex flex-grow-1 flex-lg-grow-0 align-items-center">
+        <input id="trainingSearch" type="text" class="form-control me-2" placeholder="Search trainings..." style="max-width: 280px;" />
+        <button class="btn btn-bc-gold text-white">Search</button>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'dashboard:training_list' %}" class="btn btn-bc-gold text-white">
+          Show All Trainings
+        </a>
+        <a href="{% url 'dashboard:training_past' %}" class="btn btn-bc-gold text-white">
+          My Past Trainings
+        </a>
+      </div>
     </div>
   </div>
 

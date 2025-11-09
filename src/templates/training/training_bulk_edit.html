@@ -1,0 +1,78 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Bulk Edit Trainings - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">{{ page_title }}</h1>
+      <p class="text-muted mb-0">Adjust details for multiple training sessions at once.</p>
+    </div>
+    <a href="{% url 'dashboard:training_list' %}" class="btn btn-outline-secondary">
+      ← Back to All Trainings
+    </a>
+  </div>
+
+  <form method="post" class="bulk-edit-form">
+    {% csrf_token %}
+    <input type="hidden" name="ids" value="{{ selected_ids }}">
+    {{ formset.management_form }}
+
+    <div class="row g-4">
+      {% for form in formset %}
+        <div class="col-12 col-xl-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              {{ form.id }}
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 fw-semibold">{{ form.instance.title }}</h5>
+                <span class="badge text-bg-light">{{ form.instance.date|date:"M j, Y" }}</span>
+              </div>
+              <div class="row g-3">
+                {% for field in form.visible_fields %}
+                  <div class="col-12 {% if field.name != 'title' and field.name != 'capacity' %}col-md-6 {% endif %}">
+                    <label class="form-label small fw-semibold text-muted">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                      <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12">
+          <div class="alert alert-warning">No trainings selected.</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+      <button type="submit" class="btn btn-bc-gold text-white px-4">
+        Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .bulk-edit-form input,
+  .bulk-edit-form select {
+    width: 100%;
+    border: 1px solid #e0d9c5;
+    border-radius: 10px;
+    padding: 0.5rem;
+  }
+
+  .bulk-edit-form input:focus,
+  .bulk-edit-form select:focus {
+    border-color: #c9a64d;
+    box-shadow: 0 0 0 2px rgba(201, 166, 77, 0.2);
+    outline: none;
+  }
+</style>
+{% endblock %}
