@@ -651,8 +651,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const card = list.closest(".training-card");
         card.querySelectorAll(".training-level").forEach(lv => lv.style.display = "none");
         item.classList.add("active-level");
-        const target = card.querySelector("#" + item.dataset.target);
-        if (target) target.style.display = "block";
+        const target = document.getElementById(item.dataset.target);
+        if (target && card.contains(target)) {
+          target.style.display = "block";
+        }
       });
     });
   });
