@@ -1,8 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from apps.profiles.models import UserProfile
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
+from .models import Training
+from .forms import TrainingSessionForm
 
 
 @never_cache
@@ -87,9 +89,20 @@ def training_management(request):
 def calendar_add(request):
     """Base calendar for adding training sessions"""
     user_profile = request.user.userprofile
+    if request.method == 'POST':
+        form = TrainingSessionForm(request.POST)
+        if form.is_valid():
+            training = form.save(commit=False)
+            training.instructor = request.user
+            training.save()
+            return redirect('dashboard:training_management')
+    # prefill title if provided in querystring
+    pre_title = request.GET.get('title')
+    initial = {'title': pre_title} if pre_title else None
     return render(request, 'training/calendar_add.html', {
         "user_profile": user_profile,
-        "page_title": "Add Training Calendar"
+        "page_title": "Add Training Calendar",
+        "form": TrainingSessionForm(initial=initial) if initial else TrainingSessionForm()
     })
 
 
@@ -98,9 +111,19 @@ def calendar_add(request):
 def calendar_edit(request):
     """Base calendar for editing training sessions"""
     user_profile = request.user.userprofile
+    training_id = request.GET.get('id')
+    training = get_object_or_404(Training, id=training_id, instructor=request.user) if training_id else None
+    
+    if request.method == 'POST' and training:
+        form = TrainingSessionForm(request.POST, instance=training)
+        if form.is_valid():
+            form.save()
+            return redirect('dashboard:training_management')
+            
     return render(request, 'training/calendar_edit.html', {
         "user_profile": user_profile,
-        "page_title": "Edit Training Calendar"
+        "page_title": "Edit Training Calendar",
+        "form": TrainingSessionForm(instance=training) if training else None,
     })
 
 
@@ -109,8 +132,29 @@ def calendar_edit(request):
 def calendar_remove(request):
     """Base calendar for removing training sessions"""
     user_profile = request.user.userprofile
+    if request.method == 'POST':
+        training_id = request.POST.get('id')
+        if training_id:
+            Training.objects.filter(id=training_id, instructor=request.user).delete()
+            return redirect('dashboard:training_management')
+            
     return render(request, 'training/calendar_remove.html', {
         "user_profile": user_profile,
-        "page_title": "Remove Training Calendar"
+        "page_title": "Remove Training Calendar",
     })
+
+
+@login_required
+def training_list_api(request):
+    """Return JSON list of trainings for the calendar frontend."""
+    trainings = Training.objects.all().order_by('date', 'start_time')
+    data = []
+    for t in trainings:
+        data.append({
+            'id': t.id,
+            'title': t.title,
+            'start': f"{t.date.isoformat()}T{t.start_time.strftime('%H:%M:%S')}",
+            'end': f"{t.date.isoformat()}T{t.end_time.strftime('%H:%M:%S')}",
+        })
+    return JsonResponse(data, safe=False)
 

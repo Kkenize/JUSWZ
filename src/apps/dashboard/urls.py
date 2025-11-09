@@ -18,4 +18,6 @@ urlpatterns = [
     path('training-management/calendar/add/', views.calendar_add, name='calendar_add'),
     path('training-management/calendar/edit/', views.calendar_edit, name='calendar_edit'),
     path('training-management/calendar/remove/', views.calendar_remove, name='calendar_remove'),
+    # API for calendar events (minimal JSON list)
+    path('training-management/calendar/events/', views.training_list_api, name='training_list_api'),
 ]

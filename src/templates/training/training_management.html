@@ -667,6 +667,32 @@ document.addEventListener("DOMContentLoaded", function() {
       card.style.display = title.includes(query) || query === "" ? "block" : "none";
     });
   });
+
+  // When user clicks any "Add" button, append the training title to the add URL
+  document.querySelectorAll('a[href*="calendar/add"]').forEach(a => {
+    a.addEventListener('click', function(e) {
+      // respect modifier keys (open in new tab/window)
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      // find the most specific title: level h5, otherwise card title
+      const level = a.closest('.training-level');
+      let title = '';
+      if (level) {
+        const h5 = level.querySelector('h5');
+        if (h5) title = h5.textContent.trim();
+      }
+      if (!title) {
+        const card = a.closest('.training-card');
+        const tt = card && card.querySelector('.training-title');
+        if (tt) title = tt.textContent.trim();
+      }
+      if (title) {
+        e.preventDefault();
+        const href = a.getAttribute('href');
+        const sep = href.includes('?') ? '&' : '?';
+        window.location.href = href + sep + 'title=' + encodeURIComponent(title);
+      }
+    });
+  });
 });
 </script>
 
