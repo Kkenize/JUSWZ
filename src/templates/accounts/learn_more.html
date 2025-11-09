@@ -120,6 +120,34 @@
             border-radius: 8px;
         }
         
+        .info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 25px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            border-left: 4px solid #333;
+        }
+        
+        
+        .cta-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 15px 36px;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            transition: background 0.3s;
+        }
+        
+        .cta-button:hover {
+            background: #222;
+        }
+        
         .form-link {
             display: inline-block;
             padding: 15px 30px;
@@ -141,6 +169,7 @@
             text-align: center;
             margin: 40px 0;
         }
+        
         
         .testimonials {
             display: flex;
@@ -246,9 +275,43 @@
 
     <!-- MAIN CONTENT -->
     <div class="main-content">
-        <!-- Mission Statement Section -->
         <div class="section">
-            <h1 class="section-title">Mission Statement</h1>
+            <h1 class="section-title">Getting Started</h1>
+            <div class="mission-statement info-card">
+                <h2 class="box-title">Orientation</h2>
+                <p>
+                    The Hatchery Makerspaces are for everyone. The first step in joining our maker community is taking the orientation. Once you complete our online safety orientation, you can access tool trainings, equipment, and other events inside The Hatchery Makerspaces.
+                </p>
+                <p>
+                    This self-paced experience will take approximately 25 minutes to complete. You can take as long as you need. To begin the orientation, click “Get Started!” below and use your Boston College credentials. Once logged in, the course content will appear below.
+                </p>
+                <p>
+                    After finishing the online orientation, you will unlock the ability to enroll in hands-on training sessions for specific tools. Orientation completion is required before booking any equipment training.
+                </p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 0;">
+            <a class="cta-button" href="{% url 'login' %}">Get Started!</a>
+        </div>
+        
+        <div class="section">
+            <div class="mission-statement info-card">
+                <h2 class="box-title">Trainings</h2>
+                <p>
+                    Tool Trainings, led by Hatchery Student Team Members, educate users on how to safely operate our tools and equipment, all while making a product of their own.
+                </p>
+                <p>
+                    Trainings are scheduled through the BC Makerspace calendar once your orientation status is verified. Choose the tool you want to learn, select an available session, and confirm your spot using your BC credentials.
+                </p>
+                <p>
+                    If you don’t see a time that works for you, email hatchery@bc.edu with your availability and the machine you’d like to access, and a team member will help coordinate a session.
+                </p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Mission Statement</h2>
             <div class="mission-statement">
                 In the spirit of 'Think to Make for Impact,' being able to iterate, visualize, refine, and communicate creative design ideas using prototypes is an essential skill set for our students entering the future workforce. The mission of the Boston College (BC) Makerspaces (The Hatchery) is to enable these transformative capabilities, irrespective of background or discipline, by providing an equitable, accessible, and well-equipped community-oriented space for all. Wherever you are on your making and design journey, The Hatchery Makerspaces at Boston College encourages all members of the community to let their ideas fly.
             </div>
