@@ -133,10 +133,15 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_DOMAIN = "bc.edu"
+
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "SCOPE": ["profile", "email"],
-        "AUTH_PARAMS": {"access_type": "offline"},
+        "SCOPE": [
+            "profile",
+            "email",
+            "https://www.googleapis.com/auth/calendar",
+        ],
+        "AUTH_PARAMS": {"access_type": "offline", "prompt": "consent"}
     }
 }
 

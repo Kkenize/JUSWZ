@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db.models import Count
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training
+from .models import Training, create_google_calendar_event
 from .forms import TrainingSessionForm
 
 
@@ -270,6 +270,10 @@ def calendar_add(request):
             training = form.save(commit=False)
             training.instructor = request.user
             training.save()
+
+            # Create Google Calendar event
+            create_google_calendar_event(request.user, training)
+
             return redirect('dashboard:training_management')
     # prefill title if provided in querystring
     pre_title = request.GET.get('title')
