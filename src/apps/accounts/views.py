@@ -12,6 +12,7 @@ import requests
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
+from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
 
 
 User = get_user_model()
@@ -59,6 +60,21 @@ class GoogleLoginCallback(APIView):
 
             # Log in user
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+            # Save access token for Google API calls
+            app, _ = SocialApp.objects.get_or_create(provider='google', defaults={'name': 'Google', 'client_id': settings.GOOGLE_OAUTH_CLIENT_ID, 'secret': settings.GOOGLE_OAUTH_CLIENT_SECRET})
+            social_account, _ = SocialAccount.objects.get_or_create(user=user, provider='google', uid=userinfo.get("sub"))
+
+            # Ensure SocialToken is created and saved for this user/account/app
+            SocialToken.objects.update_or_create(
+                app=app,
+                account=social_account,
+                defaults={
+                    "token": access_token,
+                    'token_secret': token_response.get("refresh_token", "")
+                }
+         )
+
 
             # Redirect to dashboard home
             return redirect("dashboard:home")
