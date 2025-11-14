@@ -250,23 +250,42 @@
       <div class="row">
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
-          <h4 class="fw-bold mb-3 training-title">Vinyl Cutter Training</h4>
+          <h4 class="fw-bold mb-3 training-title">Vinyl & Screen Printing Training</h4>
           <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="vinyl-level1">Level 1 Training</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2a">Level 2 Garment</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2b">Level 2 Sticker</li>
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="vinyl-level1a">Level 1 – Basics</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level1b">Level 1 – Screen Printing</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2a">Level 2 – Garment</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2b">Level 2 – Sticker</li>
           </ul>
         </div>
 
         <!-- RIGHT COLUMN -->
         <div class="col-md-9">
-          <!-- Level 1 -->
-          <div id="vinyl-level1" class="training-level active">
+          <!-- Level 1 Basics -->
+          <div id="vinyl-level1a" class="training-level active">
             <h5 class="fw-bold mb-3">Lvl 1 – Vinyl Cutting Basics Training</h5>
             <div class="row g-4 align-items-start">
               <div class="col-md-8">
                 <img src="{% static 'training_images/Vinyl_Level_1.png' %}"
                     alt="Lvl 1 – Vinyl Cutting Basics Training"
+                    class="rounded shadow-sm w-100"
+                    style="height:auto;max-height:300px;object-fit:contain;" />
+              </div>
+              <div class="col-md-4 d-flex flex-column gap-2">
+                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
+                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
+                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Level 1 Screen Printing -->
+          <div id="vinyl-level1b" class="training-level" style="display:none;">
+            <h5 class="fw-bold mb-3">Lvl 1 – Screen Printing Training</h5>
+            <div class="row g-4 align-items-start">
+              <div class="col-md-8">
+                <img src="{% static 'training_images/Screen_Painting_Level_1.png' %}"
+                    alt="Lvl 1 – Screen Printing Training"
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
@@ -316,41 +335,7 @@
         </div>
       </div>
     </div>
-
-    <!-- 2D Printing Training -->
-    <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
-      <div class="row">
-        <!-- LEFT COLUMN -->
-        <div class="col-md-3 border-end">
-          <h4 class="fw-bold mb-3 training-title">2D Printing Training</h4>
-          <ul class="list-unstyled" id="levelList2D" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="printing-level1">Level 1 Training</li>
-          </ul>
-        </div>
-
-        <!-- RIGHT COLUMN -->
-        <div class="col-md-9">
-          <!-- Level 1 -->
-          <div id="printing-level1" class="training-level active">
-            <h5 class="fw-bold mb-3">Lvl 1 – Screen Printing Training</h5>
-            <div class="row g-4 align-items-start">
-              <div class="col-md-8">
-                <img src="{% static 'training_images/Screen_Painting_Level_1.png' %}"
-                    alt="Lvl 1 – Screen Printing Training"
-                    class="rounded shadow-sm w-100"
-                    style="height:auto;max-height:300px;object-fit:contain;" />
-              </div>
-              <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    
     <!-- Woodworking Training -->
     <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
       <div class="row">
