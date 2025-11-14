@@ -1,5 +1,7 @@
 import json
 
+from collections import defaultdict
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -11,7 +13,7 @@ from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Training, create_google_calendar_event
 from .forms import TrainingSessionForm
-from .prerequisites import get_training_metadata, serialize_prereq_map
+from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
 @never_cache
@@ -254,7 +256,20 @@ def training_bulk_remove(request):
 def calendar_add(request):
     """Base calendar for adding training sessions"""
     user_profile = request.user.userprofile
-    trainings_qs = Training.objects.all().order_by('-date', '-start_time')
+    today = timezone.localdate()
+    selected_training_title = (
+        request.GET.get('training_id')
+        or request.GET.get('title')
+        or request.GET.get('training')
+    )
+
+    trainings_qs = Training.objects.filter(date__gte=today).order_by('date', 'start_time')
+    has_training_filter = bool(selected_training_title)
+    if has_training_filter:
+        trainings_qs = trainings_qs.filter(title=selected_training_title)
+    else:
+        trainings_qs = trainings_qs.none()
+
     training_sessions = [
         {
             "id": t.id,
@@ -321,7 +336,19 @@ def calendar_remove(request):
     if user_profile.role not in ['staff', 'admin']:
         return HttpResponseForbidden("You do not have permission to access this page.")
 
-    trainings_qs = Training.objects.all().order_by('-date', '-start_time')
+    today = timezone.localdate()
+    selected_training_title = (
+        request.GET.get('training_id')
+        or request.GET.get('title')
+        or request.GET.get('training')
+    )
+
+    trainings_qs = Training.objects.filter(date__gte=today).order_by('date', 'start_time')
+    has_training_filter = bool(selected_training_title)
+    if has_training_filter:
+        trainings_qs = trainings_qs.filter(title=selected_training_title)
+    else:
+        trainings_qs = trainings_qs.none()
     training_sessions = [
         {
             "id": t.id,
@@ -367,20 +394,70 @@ def training_list_api(request):
     return JsonResponse(data, safe=False)
 
 
-def _get_completed_level_one_categories(user):
-    """Return a set of category keys where the user finished a Level 1 training."""
+def _get_completed_levels_by_category(user):
+    """Return a mapping of category -> set(levels completed) for the user."""
 
     if not user.is_authenticated:
-        return set()
+        return {}
 
     today = timezone.localdate()
-    completed = set()
+    completed: dict[str, set[int]] = defaultdict(set)
     user_trainings = user.enrolled_trainings.filter(date__lte=today).only('title', 'date')
     for training in user_trainings:
         metadata = get_training_metadata(training.title)
-        if metadata and metadata.get('level') == 1:
-            completed.add(metadata['category'])
-    return completed
+        if not metadata:
+            continue
+        category = metadata.get('category')
+        level = metadata.get('level')
+        if not category or level is None:
+            continue
+        completed[category].add(int(level))
+    return {category: set(levels) for category, levels in completed.items()}
+
+
+def _get_completed_level_one_categories(user):
+    """Return a set of category keys where the user finished a Level 1 training."""
+
+    completed_levels = _get_completed_levels_by_category(user)
+    return {
+        category
+        for category, levels in completed_levels.items()
+        if 1 in levels
+    }
+
+
+def _build_level_unlock_map(user):
+    """Return a map describing which training levels are unlocked for the user."""
+
+    completed_levels = _get_completed_levels_by_category(user)
+    level_unlocks = {}
+
+    for category_key, config in TRAINING_SECTIONS.items():
+        category_completed = completed_levels.get(category_key, set())
+        levels = config.get("levels", {})
+        label = config.get("label", category_key.replace("_", " ").title())
+        levels_data = {}
+
+        for level, titles in sorted(levels.items(), key=lambda item: int(item[0])):
+            level_number = int(level)
+            prerequisite_met = (
+                level_number == 1 or (level_number - 1) in category_completed
+            )
+            levels_data[f"level{level_number}"] = {
+                "number": level_number,
+                "titles": list(titles),
+                "locked": False if level_number == 1 else not prerequisite_met,
+                "completed": level_number in category_completed,
+            }
+
+        level_unlocks[category_key] = {
+            "label": label,
+            "levels": levels_data,
+            "level1_completed": 1 in category_completed,
+            "level2_completed": 2 in category_completed,
+        }
+
+    return level_unlocks
 
 @never_cache
 @login_required
@@ -391,6 +468,19 @@ def my_trainings(request):
     # Only students should access this view
     if user_profile.role != 'student':
         return HttpResponseForbidden("You do not have permission to access this page.")
+
+    today = timezone.localdate()
+    reserved_trainings_qs = request.user.enrolled_trainings.filter(date__gte=today).order_by('date', 'start_time')
+    reserved_trainings = [
+        {
+            "id": training.id,
+            "title": training.title,
+            "date": training.date,
+            "start_time": training.start_time,
+            "end_time": training.end_time,
+        }
+        for training in reserved_trainings_qs
+    ]
 
     trainings = [
         {"name": "3D Printing Training"},
@@ -406,6 +496,8 @@ def my_trainings(request):
     return render(request, "training/my_trainings.html", {
         "user_profile": user_profile,
         "trainings": trainings,
+        "level_unlocks": _build_level_unlock_map(request.user),
+        "reserved_trainings": reserved_trainings,
     })
 
 @never_cache
@@ -420,7 +512,20 @@ def training_reserve(request):
     if request.method == 'POST':
         return _handle_reservation_post(request)
 
-    trainings_qs = Training.objects.all().order_by('-date', '-start_time')
+    today = timezone.localdate()
+    selected_training_title = (
+        request.GET.get('training_id')
+        or request.GET.get('title')
+        or request.GET.get('training')
+    )
+
+    trainings_qs = Training.objects.filter(date__gte=today).order_by('date', 'start_time')
+    has_training_filter = bool(selected_training_title)
+    if has_training_filter:
+        trainings_qs = trainings_qs.filter(title=selected_training_title)
+    else:
+        trainings_qs = trainings_qs.none()
+
     training_sessions = [
         {
             "id": t.id,
@@ -435,6 +540,20 @@ def training_reserve(request):
 
     completed_categories = sorted(_get_completed_level_one_categories(request.user))
     reserved_sessions = list(request.user.enrolled_trainings.values_list('id', flat=True))
+    reserved_training_details = []
+    if selected_training_title:
+        reserved_training_details = [
+            {
+                "id": t.id,
+                "title": t.title,
+                "date": t.date.isoformat(),
+                "start_time": t.start_time.strftime("%H:%M"),
+                "end_time": t.end_time.strftime("%H:%M") if t.end_time else None,
+            }
+            for t in Training.objects
+                .filter(id__in=reserved_sessions, title=selected_training_title)
+                .order_by('-date', '-start_time')
+        ]
 
     return render(request, "training/training_reserve.html", {
         "user_profile": user_profile,
@@ -444,6 +563,9 @@ def training_reserve(request):
         "prerequisite_map": serialize_prereq_map(),
         "completed_categories": completed_categories,
         "reserved_sessions": reserved_sessions,
+        "selected_training_title": selected_training_title or "",
+        "has_training_filter": has_training_filter,
+        "reserved_training_details": reserved_training_details,
     })
 
 
@@ -474,6 +596,37 @@ def _handle_reservation_post(request):
         }, status=404)
 
     user = request.user
+    action = (payload.get('action') or 'reserve').strip().lower()
+
+    if action == 'cancel':
+        if not training.participants.filter(id=user.id).exists():
+            return JsonResponse({
+                "ok": False,
+                "error": "You are not registered for this session.",
+            }, status=400)
+
+        training.participants.remove(user)
+
+        reserved_ids = list(
+            user.enrolled_trainings
+            .filter(date__gte=timezone.localdate())
+            .values_list('id', flat=True)
+        )
+
+        return JsonResponse({
+            "ok": True,
+            "message": "Reservation cancelled.",
+            "training_id": training.id,
+            "action": "cancel",
+            "reserved_sessions": reserved_ids,
+        })
+
+    if action and action != 'reserve':
+        return JsonResponse({
+            "ok": False,
+            "error": "Unsupported action.",
+        }, status=400)
+
     metadata = get_training_metadata(training.title)
     completed_categories = _get_completed_level_one_categories(user)
 

@@ -1,5 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% load static %}
+{% load static dashboard_extras %}
 
 {% block title %}My Trainings{% endblock %}
 
@@ -20,9 +20,50 @@
         <input id="trainingSearch" type="text" class="form-control me-2" placeholder="Search trainings..." style="max-width: 280px;" />
         <button class="btn btn-bc-gold text-white">Search</button>
       </div>
-      <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'dashboard:training_list_student' %}" class="btn btn-bc-gold text-white">Show All Trainings</a>
+    </div>
+  </div>
+
+  <!-- Reserved Trainings Overview -->
+  <div class="reserved-panel card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-3">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Your Upcoming Sessions</p>
+          <h3 class="fw-bold mb-0">Reserved Training</h3>
+        </div>
       </div>
+      {% if reserved_trainings %}
+      <ul class="reserved-session-list list-unstyled mb-0">
+        {% for training in reserved_trainings %}
+        <li class="reserved-session-row d-flex flex-column flex-md-row align-items-md-center gap-2">
+          <div class="reserved-session-info flex-grow-1">
+            <div class="reserved-session-title">{{ training.title }}</div>
+            <div class="reserved-session-meta text-muted small">
+              {{ training.date|date:'M j, Y' }}
+              •
+              {{ training.start_time|time:'P' }}
+              {% if training.end_time %} – {{ training.end_time|time:'P' }}{% endif %}
+            </div>
+          </div>
+          <div class="reserved-session-actions">
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm js-cancel-reservation"
+                    data-training-id="{{ training.id }}"
+                    data-training-title="{{ training.title }}">
+              Delete
+            </button>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="reserved-empty-state text-muted d-none" id="reserved-empty-state">
+        You haven't reserved any upcoming trainings yet. Start by selecting a category below.
+      </div>
+      {% else %}
+      <div class="reserved-empty-state text-muted" id="reserved-empty-state">
+        You haven't reserved any upcoming trainings yet. Start by selecting a category below.
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -35,12 +76,50 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">3D Printing Training</h4>
-          <ul class="list-unstyled" id="levelList3D" style="cursor: pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="3d-level1">Level 1 Training</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2a">Level 2 High-Detail Resin</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2b">Level 2 Multi-Material</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level3">Level 3 Training</li>
+          {% with unlock=level_unlocks|dict_get:"3d_printing" %}
+          <ul class="list-unstyled" id="levelList3D" style="cursor: pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="3d-level1"
+                data-category="3d_printing"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Training
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="3d-level2a"
+                data-category="3d_printing"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 High-Detail Resin
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="3d-level2b"
+                data-category="3d_printing"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Multi-Material
+            </li>
+            {% endwith %}
+            {% with level3=unlock.levels.level3 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
+                data-target="3d-level3"
+                data-category="3d_printing"
+                data-level="{{ level3.number }}"
+                data-locked="{{ level3.locked|yesno:'true,false' }}"
+                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 3 Training
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -215,10 +294,32 @@
       <div class="row">
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Textile Training</h4>
-          <ul class="list-unstyled" id="levelListTextile" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="textile-level1">Level 1 Training</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="textile-level2">Level 2 Training</li>
+          {% with unlock=level_unlocks|dict_get:"textile" %}
+          <ul class="list-unstyled" id="levelListTextile" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="textile-level1"
+                data-category="textile"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Training
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="textile-level2"
+                data-category="textile"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Training
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <div class="col-md-9">
@@ -305,11 +406,40 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Laser Cutter Training</h4>
-          <ul class="list-unstyled" id="levelListLaser" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="laser-level1">Level 1 Training</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2a">Level 2 Rotary</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2b">Level 2 UV</li>
+          {% with unlock=level_unlocks|dict_get:"laser" %}
+          <ul class="list-unstyled" id="levelListLaser" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="laser-level1"
+                data-category="laser"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Training
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="laser-level2a"
+                data-category="laser"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Rotary
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="laser-level2b"
+                data-category="laser"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 UV
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -434,12 +564,48 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Vinyl & Screen Printing Training</h4>
-          <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="vinyl-level1a">Level 1 – Basics</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level1b">Level 1 – Screen Printing</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2a">Level 2 – Garment</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2b">Level 2 – Sticker</li>
+          {% with unlock=level_unlocks|dict_get:"vinyl_screen" %}
+          <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="vinyl-level1a"
+                data-category="vinyl_screen"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 – Basics
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
+                data-target="vinyl-level1b"
+                data-category="vinyl_screen"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 – Screen Printing
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="vinyl-level2a"
+                data-category="vinyl_screen"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 – Garment
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="vinyl-level2b"
+                data-category="vinyl_screen"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 – Sticker
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -602,14 +768,66 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Woodworking Training</h4>
-          <ul class="list-unstyled" id="levelListWood" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="wood-level1">Level 1 Training</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2a">Level 2 CNC</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2b">Level 2 Intermediate</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2c">Level 2 Chisel</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3a">Level 3 Advanced</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3b">Level 3 Lathe</li>
+          {% with unlock=level_unlocks|dict_get:"woodworking" %}
+          <ul class="list-unstyled" id="levelListWood" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="wood-level1"
+                data-category="woodworking"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Training
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="wood-level2a"
+                data-category="woodworking"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 CNC
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="wood-level2b"
+                data-category="woodworking"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Intermediate
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="wood-level2c"
+                data-category="woodworking"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Chisel
+            </li>
+            {% endwith %}
+            {% with level3=unlock.levels.level3 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
+                data-target="wood-level3a"
+                data-category="woodworking"
+                data-level="{{ level3.number }}"
+                data-locked="{{ level3.locked|yesno:'true,false' }}"
+                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 3 Advanced
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
+                data-target="wood-level3b"
+                data-category="woodworking"
+                data-level="{{ level3.number }}"
+                data-locked="{{ level3.locked|yesno:'true,false' }}"
+                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 3 Lathe
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -853,11 +1071,40 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Electronics Training</h4>
-          <ul class="list-unstyled" id="levelListElectronics" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="electronics-level1a">Level 1 Circuitry</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level1b">Level 1 Soldering</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level2">Level 2 Training</li>
+          {% with unlock=level_unlocks|dict_get:"electronics" %}
+          <ul class="list-unstyled" id="levelListElectronics" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="electronics-level1a"
+                data-category="electronics"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Circuitry
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
+                data-target="electronics-level1b"
+                data-category="electronics"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Soldering
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="electronics-level2"
+                data-category="electronics"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Training
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -983,12 +1230,50 @@
         <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Metalworking Training</h4>
-          <ul class="list-unstyled" id="levelListMetal" style="cursor:pointer;">
-            <li class="py-2 px-3 mb-1 rounded active-level" data-target="metal-level1a">Level 1 Waterjet</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level1b">Level 1 Machining</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2a">Level 2 Conversational</li>
-            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2b">Level 3 CAM</li>
+          {% with unlock=level_unlocks|dict_get:"metalworking" %}
+          <ul class="list-unstyled" id="levelListMetal" style="cursor:pointer;"
+              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
+              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
+            {% with level1=unlock.levels.level1 %}
+            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
+                data-target="metal-level1a"
+                data-category="metalworking"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Waterjet
+            </li>
+            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
+                data-target="metal-level1b"
+                data-category="metalworking"
+                data-level="{{ level1.number }}"
+                data-locked="{{ level1.locked|yesno:'true,false' }}"
+                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 1 Machining
+            </li>
+            {% endwith %}
+            {% with level2=unlock.levels.level2 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
+                data-target="metal-level2a"
+                data-category="metalworking"
+                data-level="{{ level2.number }}"
+                data-locked="{{ level2.locked|yesno:'true,false' }}"
+                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 2 Conversational
+            </li>
+            {% endwith %}
+            {% with level3=unlock.levels.level3 %}
+            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
+                data-target="metal-level2b"
+                data-category="metalworking"
+                data-level="{{ level3.number }}"
+                data-locked="{{ level3.locked|yesno:'true,false' }}"
+                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
+              Level 3 CAM
+            </li>
+            {% endwith %}
           </ul>
+          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -1150,12 +1435,21 @@ document.addEventListener("DOMContentLoaded", function() {
   let role = "{{ user_profile.role|title }}";
   if (role === "Staff") role = "Team Member";
   greeting.textContent = `${timeGreeting}, ${role}!`;
+  const reservationEndpoint = "{% url 'dashboard:training_reserve' %}";
+  const reservedListEl = document.querySelector('.reserved-session-list');
+  const reservedEmptyState = document.getElementById('reserved-empty-state');
+  document.querySelectorAll('.js-cancel-reservation').forEach(button => {
+    button.addEventListener('click', () => handleReservationCancel(button));
+  });
 
   // Handle per-card level toggling
   document.querySelectorAll("[id^='levelList']").forEach(list => {
     const items = list.querySelectorAll("li");
     items.forEach(item => {
       item.addEventListener("click", () => {
+        if (item.dataset.locked === "true") {
+          return;
+        }
         items.forEach(li => li.classList.remove("active-level"));
         const card = list.closest(".training-card");
         card.querySelectorAll(".training-level").forEach(lv => lv.style.display = "none");
@@ -1179,23 +1473,26 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 
+  function resolveTrainingTitle(anchor) {
+    const level = anchor.closest('.training-level');
+    let title = '';
+    if (level) {
+      const h5 = level.querySelector('h5');
+      if (h5) title = h5.textContent.trim();
+    }
+    if (!title) {
+      const card = anchor.closest('.training-card');
+      const tt = card && card.querySelector('.training-title');
+      if (tt) title = tt.textContent.trim();
+    }
+    return title;
+  }
+
   // When user clicks any "Add" button, append the training title to the add URL
   document.querySelectorAll('a[href*="calendar/add"]').forEach(a => {
     a.addEventListener('click', function(e) {
-      // respect modifier keys (open in new tab/window)
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      // find the most specific title: level h5, otherwise card title
-      const level = a.closest('.training-level');
-      let title = '';
-      if (level) {
-        const h5 = level.querySelector('h5');
-        if (h5) title = h5.textContent.trim();
-      }
-      if (!title) {
-        const card = a.closest('.training-card');
-        const tt = card && card.querySelector('.training-title');
-        if (tt) title = tt.textContent.trim();
-      }
+      const title = resolveTrainingTitle(a);
       if (title) {
         e.preventDefault();
         const href = a.getAttribute('href');
@@ -1204,6 +1501,73 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   });
+
+  // Pass training selection to the reservation calendar as well
+  document.querySelectorAll('a[href*="training-reserve"]').forEach(a => {
+    a.addEventListener('click', function(e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const title = resolveTrainingTitle(a);
+      if (!title) return;
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      const sep = href.includes('?') ? '&' : '?';
+      window.location.href = href + sep + 'training_id=' + encodeURIComponent(title);
+    });
+  });
+
+  function handleReservationCancel(button) {
+    const trainingId = button.dataset.trainingId;
+    if (!trainingId) return;
+    const csrfToken = getCookie('csrftoken');
+    const originalLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Deleting...';
+
+    fetch(reservationEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      },
+      body: JSON.stringify({
+        training_id: trainingId,
+        action: 'cancel',
+      }),
+    })
+      .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) {
+          const errorMessage = data && data.error ? data.error : 'Unable to cancel reservation.';
+          throw new Error(errorMessage);
+        }
+        const row = button.closest('.reserved-session-row');
+        if (row && row.parentElement) {
+          row.parentElement.removeChild(row);
+        }
+        if (reservedListEl && !reservedListEl.querySelector('.reserved-session-row')) {
+          reservedListEl.classList.add('d-none');
+          if (reservedEmptyState) {
+            reservedEmptyState.classList.remove('d-none');
+          }
+        }
+      })
+      .catch(error => {
+        alert(error.message || 'Unable to cancel reservation.');
+      })
+      .finally(() => {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      });
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop().split(';').shift();
+    }
+    return '';
+  }
 });
 </script>
 
@@ -1212,7 +1576,36 @@ document.addEventListener("DOMContentLoaded", function() {
   [id^="levelList"] li {transition: background 0.2s, color 0.2s;}
   [id^="levelList"] li:hover {background-color:#f8f9fa;}
   .active-level {background-color:#c9a64d!important;color:white!important;font-weight:600;}
+  .level-locked {color:#a0a0a0!important;cursor:not-allowed;}
+  .level-locked:hover {background-color:transparent!important;}
   .btn:hover {opacity:0.9;transition:opacity 0.15s ease-in-out;}
+  .reserved-panel .card-body {
+    padding: 1.75rem;
+  }
+  .reserved-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .reserved-session-row {
+    padding: 0.85rem 1rem;
+    border: 1px solid #efe7d5;
+    border-radius: 12px;
+    background-color: #fffdf6;
+  }
+  .reserved-session-title {
+    font-weight: 600;
+    color: #2a2a2a;
+  }
+  .reserved-session-actions .btn {
+    min-width: 110px;
+  }
+  .reserved-empty-state {
+    border: 1px dashed #ded5bf;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    background-color: #fffef9;
+  }
 </style>
 
 {% endblock %}

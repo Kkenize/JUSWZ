@@ -127,6 +127,32 @@
     <div id="calendar"></div>
   </div>
   {% if calendar_mode == 'reserve' %}
+  <div class="reserve-status mt-3">
+    {% if not has_training_filter %}
+      <div class="reserve-empty-state">
+        Please select a training to view available sessions.
+      </div>
+    {% elif not training_sessions %}
+      <div class="reserve-empty-state">
+        No upcoming sessions available for this training.
+      </div>
+      {% if reserved_training_details %}
+      <div class="reserved-summary card mt-3">
+        <div class="card-body">
+          <p class="text-muted mb-2">You currently have reservations for this training:</p>
+          <ul class="reserved-list list-unstyled mb-0">
+            {% for item in reserved_training_details %}
+              <li>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.date|date:'M j, Y' }} • {{ item.start_time|time:'P' }}{% if item.end_time %} – {{ item.end_time|time:'P' }}{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
   <div class="reserve-action-panel card shadow-sm mt-4">
     <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3">
       <div class="reserve-action-copy text-muted" id="reserve-selected-hint">
@@ -186,9 +212,10 @@
 {{ prerequisite_map|json_script:"training-prereq-map" }}
 {{ completed_categories|json_script:"training-completed-categories" }}
 {{ reserved_sessions|json_script:"training-reserved-session-ids" }}
+{{ reserved_training_details|json_script:"training-reserved-details" }}
 
 <!-- FullCalendar CDN -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
 <script>
@@ -218,17 +245,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const prereqMapEl = document.getElementById('training-prereq-map');
   const completedCategoriesEl = document.getElementById('training-completed-categories');
   const reservedSessionsEl = document.getElementById('training-reserved-session-ids');
+  const reservedDetailsEl = document.getElementById('training-reserved-details');
+  const hasTrainingFilter = "{{ has_training_filter|yesno:'true,false' }}" === 'true';
   const prereqConfig = prereqMapEl ? JSON.parse(prereqMapEl.textContent) : {};
   const trainingLookup = prereqConfig.by_title || {};
   const completedCategorySet = new Set((completedCategoriesEl ? JSON.parse(completedCategoriesEl.textContent) : []).map(String));
   const reservedSessionSet = new Set((reservedSessionsEl ? JSON.parse(reservedSessionsEl.textContent) : []).map(String));
+  const reservedDetails = reservedDetailsEl ? JSON.parse(reservedDetailsEl.textContent) : [];
   const tooltipLockedMessage = "Complete Level 1 in this category to unlock this training.";
   const tooltipReservedMessage = "You already reserved this session.";
   let pendingReservationEvent = null;
   let selectedReservationEvent = null;
   let reservationSubmitting = false;
   let pendingRemovalEvent = null;
-  const calendar = new FullCalendar.Calendar(calendarEl, {
+  // Sidebar data + interactions
+  const trainingDataElement = document.getElementById('training-session-data');
+  const trainingData = trainingDataElement ? JSON.parse(trainingDataElement.textContent) : [];
+  const sessionMap = new Map(trainingData.map(session => [String(session.id), session]));
+  const calendarOptions = {
     initialView: 'dayGridMonth',
     height: 600,
     headerToolbar: {
@@ -247,18 +281,71 @@ document.addEventListener('DOMContentLoaded', function() {
       if (calendarMode === 'reserve') {
         applyReservationState(info);
       }
-    },
-    eventSources: [{
+    }
+  };
+
+  function toISODateTime(dateStr, timeStr) {
+    if (!dateStr) return null;
+    if (!timeStr) return `${dateStr}T00:00:00`;
+    const normalized = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+    return `${dateStr}T${normalized}`;
+  }
+
+  function addReservedEvents(baseEvents) {
+    if (!Array.isArray(reservedDetails) || !reservedDetails.length) return baseEvents;
+    const existingIds = new Set(baseEvents.map(evt => String(evt.id)));
+    reservedDetails.forEach(detail => {
+      if (!detail || !detail.date) return;
+      const eventId = String(detail.id);
+      if (existingIds.has(eventId)) return;
+      const start = toISODateTime(detail.date, detail.start_time);
+      const end = toISODateTime(detail.date, detail.end_time);
+      baseEvents.push({
+        id: detail.id,
+        title: detail.title,
+        start,
+        end,
+        extendedProps: {
+          prereqMeta: getTrainingMetadataByTitle(detail.title) || null,
+        },
+      });
+    });
+    return baseEvents;
+  }
+
+  function buildReserveEvents() {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const events = (trainingData || [])
+      .map(session => {
+        if (!session || !session.date) return null;
+        if (session.date < todayISO) return null;
+        const start = toISODateTime(session.date, session.start_time);
+        const end = toISODateTime(session.date, session.end_time);
+        return {
+          id: session.id,
+          title: session.title,
+          start,
+          end,
+          extendedProps: {
+            prereqMeta: getTrainingMetadataByTitle(session.title) || null,
+          },
+        };
+      })
+      .filter(Boolean);
+    return addReservedEvents(events);
+  }
+
+  if (calendarMode === 'reserve') {
+    calendarOptions.events = buildReserveEvents();
+  } else {
+    calendarOptions.eventSources = [{
       url: eventsUrl,
       method: 'GET'
-    }]
-  });
-  calendar.render();
+    }];
+  }
 
-  // Sidebar data + interactions
-  const trainingDataElement = document.getElementById('training-session-data');
-  const trainingData = trainingDataElement ? JSON.parse(trainingDataElement.textContent) : [];
-  const sessionMap = new Map(trainingData.map(session => [String(session.id), session]));
+  const calendar = new FullCalendar.Calendar(calendarEl, calendarOptions);
+  calendar.render();
 
   const sameTypeList = document.getElementById('same-type-list');
   const sameTypeEmpty = document.getElementById('same-type-empty');
@@ -522,11 +609,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function updateReservationStateForAllEvents() {
     if (calendarMode !== 'reserve' || !calendar) return;
-    if (typeof calendar.refetchEvents === 'function') {
-      calendar.refetchEvents();
-    } else if (typeof calendar.render === 'function') {
-      calendar.render();
-    }
+    const elements = calendarEl.querySelectorAll('.fc-event[data-event-id]');
+    elements.forEach(el => {
+      const eventId = el.dataset.eventId;
+      const event = calendar.getEventById ? calendar.getEventById(eventId) : null;
+      if (event) {
+        applyReservationState({ event, el });
+      }
+    });
   }
 
   function openReservationModal(event, providedMeta) {
@@ -1415,6 +1505,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   .reserve-action-panel .card-body {
     padding: 1.25rem 1.5rem;
+  }
+
+  .reserve-empty-state {
+    border: 1px solid #efe7d5;
+    border-radius: 14px;
+    padding: 0.9rem 1.2rem;
+    background-color: #fffdf6;
+    color: #7a6a2f;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .reserved-summary .card-body {
+    padding: 1rem 1.25rem;
+  }
+
+  .reserved-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px dashed #eee2c5;
+  }
+
+  .reserved-list li:last-child {
+    border-bottom: none;
   }
 
   /* ---- REMOVAL MODAL ---- */
