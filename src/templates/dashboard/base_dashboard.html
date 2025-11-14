@@ -20,7 +20,7 @@
                 {% block sidebar_items %}
 
                 <!-- Student Dashboard (only for students) -->
-                {% if user_profile.role == 'user' %}
+                {% if user_profile.role == 'student' %}
                 <a href="{% url 'dashboard:student' %}" class="nav-link">Student Dashboard</a>
                 {% endif %}
 

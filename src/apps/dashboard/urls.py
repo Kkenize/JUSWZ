@@ -17,6 +17,15 @@ urlpatterns = [
     path('training-management/past/', views.training_past, name='training_past'),
     path('training-management/bulk-edit/', views.training_bulk_edit, name='training_bulk_edit'),
     path('training-management/bulk-remove/', views.training_bulk_remove, name='training_bulk_remove'),
+    
+    # My Trainings (student)
+    path('training-list/student/', views.training_list_student, name='training_list_student'),
+    
+    # My Trainings (student view)
+    path("my-trainings/", views.my_trainings, name="my_trainings"),
+    
+    # Training Reserve (under My Trainings)
+    path("training-reserve/", views.training_reserve, name="training_reserve"),
 
     # Calendar pages (under Training Management)
     path('training-management/calendar/add/', views.calendar_add, name='calendar_add'),

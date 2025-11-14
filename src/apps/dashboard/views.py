@@ -362,3 +362,45 @@ def training_list_api(request):
             'end': f"{t.date.isoformat()}T{t.end_time.strftime('%H:%M:%S')}",
         })
     return JsonResponse(data, safe=False)
+
+@never_cache
+@login_required
+def my_trainings(request):
+    """Student view: allows students to browse and reserve training sessions."""
+    user_profile = request.user.userprofile
+
+    # Only students should access this view
+    if user_profile.role != 'student':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    trainings = [
+        {"name": "3D Printing Training"},
+        {"name": "Textile Training"},
+        {"name": "Laser Cutter Training"},
+        {"name": "Vinyl Cutter Training"},
+        {"name": "2D Printing Training"},
+        {"name": "Woodworking Training"},
+        {"name": "Electronics Training"},
+        {"name": "Metalworking Training"},
+    ]
+
+    return render(request, "training/my_trainings.html", {
+        "user_profile": user_profile,
+        "trainings": trainings,
+    })
+
+@never_cache
+@login_required
+def training_reserve(request):
+    """Placeholder for student training reservation (future feature)."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'student':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    return render(request, "training/training_reserve.html", {
+        "user_profile": user_profile,
+    })
+
+@never_cache
+@login_required
+def training_list_student(request):
+    return render(request, 'training/training_list_student.html')

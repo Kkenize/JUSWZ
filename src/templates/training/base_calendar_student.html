@@ -1,0 +1,966 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Training Calendar - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-start mt-3 mb-4"></div>
+    <div>
+      <!-- Back Button -->
+      <a href="{% url 'dashboard:my_trainings' %}" 
+         class="btn btn-back mb-3">
+        ← Back to My Trainings
+      </a>
+
+      <h1 class="fw-bold mb-1">{{ page_title }}</h1>
+      <p class="text-muted">Manage training sessions through the calendar below.</p>
+    </div>
+
+    {% if calendar_mode == 'remove' %}
+    <form id="calendar-remove-form" method="post" action="{% url 'dashboard:calendar_remove' %}" class="d-none">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="calendar-remove-id">
+    </form>
+    <div id="calendar-remove-modal" class="calendar-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="calendar-remove-modal-title" hidden>
+      <div class="calendar-modal-dialog shadow-lg">
+        <div class="calendar-modal-header d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <p class="text-uppercase text-muted small mb-1">Confirm removal</p>
+            <h5 class="fw-bold mb-0" id="calendar-remove-modal-title">Remove training session</h5>
+          </div>
+          <button type="button"
+                  class="calendar-modal-close btn btn-sm btn-outline-secondary"
+                  data-dismiss="calendar-remove"
+                  aria-label="Close removal dialog">
+            Close
+          </button>
+        </div>
+        <div class="calendar-modal-body" id="calendar-remove-modal-body">
+          Are you sure you want to remove this session?
+        </div>
+        <div class="calendar-modal-footer d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" id="calendar-remove-cancel" data-dismiss="calendar-remove">
+            Keep Session
+          </button>
+          <button type="button" class="btn btn-remove" id="calendar-remove-confirm">
+            Yes, Remove
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if form %}
+    <div class="row g-4 align-items-stretch flex-lg-nowrap calendar-top-row">
+      <div class="col-12 col-lg-6">
+        <form method="post" class="w-100 calendar-form-card h-100">
+          {% csrf_token %}
+          {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+          <div class="card calendar-form-shell p-4 shadow-sm h-100">
+            <div id="duplicate-warning" class="alert alert-warning duplicate-warning d-none" role="alert"></div>
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger mb-2 small">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="row gx-3 gy-3 align-items-end form-grid">
+              {% for field in form.visible_fields %}
+                <div class="col-12 col-md-6 form-field">
+                  {{ field.label_tag }}
+                  {{ field }}
+                  {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                  {% endif %}
+                  {% if field.help_text %}
+                    <div class="form-text small text-muted">{{ field.help_text }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="form-actions d-flex justify-content-end align-items-center mt-4">
+              {% block action_button %}
+                <button type="submit" class="btn btn-bc-gold ms-2">Save</button>
+              {% endblock %}
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card history-card shadow-sm mb-4">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="card-title mb-0 fw-semibold">Training History (Same Type)</h5>
+              <span class="badge text-bg-light text-uppercase small">History</span>
+            </div>
+            <p class="text-muted small mb-3">View past sessions for this training and duplicate for future training</p>
+            <div id="same-type-empty" class="history-empty">No sessions yet for this training.</div>
+            <div class="history-scroll-shell">
+              <div id="same-type-list" class="history-list history-list-lg"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card history-card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="card-title mb-0 fw-semibold">All Training Sessions</h5>
+              <span class="badge text-bg-light text-uppercase small">Overview</span>
+            </div>
+            <p class="text-muted small mb-3">Glance at other trainings to stay aware of the broader schedule.</p>
+            <div id="other-type-empty" class="history-empty">No other sessions found.</div>
+            <div class="history-scroll-shell">
+              <div id="other-type-list" class="history-list history-list-sm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div id="calendar-toast" class="calendar-toast" role="status" aria-live="polite"></div>
+
+  <div class="calendar-container shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+{{ training_sessions|json_script:"training-session-data" }}
+
+<!-- FullCalendar CDN -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Calendar initialization
+  const calendarEl = document.getElementById('calendar');
+  const eventsUrl = "{% url 'dashboard:training_list_api' %}";
+  const calendarEditUrl = "{% url 'dashboard:calendar_edit' %}";
+  const calendarMode = "{{ calendar_mode|default:'add' }}";
+  const removeForm = document.getElementById('calendar-remove-form');
+  const removeIdInput = document.getElementById('calendar-remove-id');
+  const removeModal = document.getElementById('calendar-remove-modal');
+  const removeModalBody = document.getElementById('calendar-remove-modal-body');
+  const removeModalConfirm = document.getElementById('calendar-remove-confirm');
+  const removeModalDismissButtons = document.querySelectorAll('[data-dismiss="calendar-remove"]');
+  let pendingRemovalEvent = null;
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 600,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    selectable: true,
+    selectMirror: true,
+    select: function(info) {
+      const dateInput = document.querySelector('form input[name=\"date\"]');
+      if (dateInput) dateInput.value = info.startStr;
+    },
+    eventClick: handleCalendarEventClick,
+    eventSources: [{
+      url: eventsUrl,
+      method: 'GET'
+    }]
+  });
+  calendar.render();
+
+  // Sidebar data + interactions
+  const trainingDataElement = document.getElementById('training-session-data');
+  const trainingData = trainingDataElement ? JSON.parse(trainingDataElement.textContent) : [];
+  const sessionMap = new Map(trainingData.map(session => [String(session.id), session]));
+
+  const sameTypeList = document.getElementById('same-type-list');
+  const sameTypeEmpty = document.getElementById('same-type-empty');
+  const otherTypeList = document.getElementById('other-type-list');
+  const otherTypeEmpty = document.getElementById('other-type-empty');
+  const toastEl = document.getElementById('calendar-toast');
+  const inlineWarning = document.getElementById('duplicate-warning');
+  const formEl = document.querySelector('form.calendar-form-card');
+  const titleInput = formEl ? formEl.querySelector('input[name=\"title\"]') : null;
+  const dateInput = formEl ? formEl.querySelector('input[name=\"date\"]') : null;
+  const startInput = formEl ? formEl.querySelector('input[name=\"start_time\"]') : null;
+  const endInput = formEl ? formEl.querySelector('input[name=\"end_time\"]') : null;
+  const capacityInput = formEl ? formEl.querySelector('input[name=\"capacity\"]') : null;
+  const defaultSelectedTitle = "{{ selected_title|default:''|escapejs }}";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dateFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  const timeFormatter = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
+  function formatEventTimestamp(dateObj) {
+    if (!dateObj) return '';
+    return `${dateFormatter.format(dateObj)} at ${timeFormatter.format(dateObj)}`;
+  }
+
+  function openRemoveModal(event) {
+    if (!removeModal) {
+      performRemoval(event);
+      return;
+    }
+    pendingRemovalEvent = event;
+    const label = event && event.title ? `"${event.title}"` : 'this session';
+    const whenInfo = event && event.start ? ` scheduled for ${formatEventTimestamp(event.start)}` : '';
+    const message = `You're about to remove ${label}${whenInfo}. This action cannot be undone.`;
+    if (removeModalBody) {
+      removeModalBody.textContent = message;
+    }
+    removeModal.removeAttribute('hidden');
+    removeModal.classList.add('show');
+    removeModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('calendar-modal-open');
+    if (removeModalConfirm) {
+      setTimeout(() => removeModalConfirm.focus(), 50);
+    }
+  }
+
+  function closeRemoveModal() {
+    if (!removeModal) return;
+    removeModal.classList.remove('show');
+    removeModal.setAttribute('aria-hidden', 'true');
+    removeModal.setAttribute('hidden', 'hidden');
+    document.body.classList.remove('calendar-modal-open');
+    pendingRemovalEvent = null;
+  }
+
+  function performRemoval(event) {
+    if (!removeForm || !removeIdInput || !event) return;
+    removeIdInput.value = event.id;
+    removeForm.submit();
+  }
+
+  function handleCalendarEventClick(info) {
+    if (!info.event || !info.event.id) return;
+
+    if (calendarMode === 'remove') {
+      openRemoveModal(info.event);
+      return;
+    }
+
+    window.location.href = calendarEditUrl + '?id=' + encodeURIComponent(info.event.id);
+  }
+
+  if (removeModalConfirm) {
+    removeModalConfirm.addEventListener('click', function() {
+      const eventToRemove = pendingRemovalEvent;
+      closeRemoveModal();
+      if (eventToRemove) {
+        performRemoval(eventToRemove);
+      }
+    });
+  }
+
+  removeModalDismissButtons.forEach(function(button) {
+    button.addEventListener('click', closeRemoveModal);
+  });
+
+  if (removeModal) {
+    removeModal.addEventListener('click', function(evt) {
+      if (evt.target === removeModal) {
+        closeRemoveModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(evt) {
+    if (evt.key === 'Escape' && removeModal && removeModal.classList.contains('show')) {
+      closeRemoveModal();
+    }
+  });
+
+  function normalizeTitle(value) {
+    return (value || '').trim().toLowerCase();
+  }
+
+  function parseISODate(value) {
+    if (!value) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  function formatInputDate(dateObj) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatDateDisplay(dateStr) {
+    const parsed = parseISODate(dateStr);
+    return parsed ? dateFormatter.format(parsed) : '';
+  }
+
+  function formatTimeDisplay(timeStr) {
+    if (!timeStr) return '';
+    const [hour, minute] = timeStr.split(':').map(Number);
+    const temp = new Date();
+    temp.setHours(hour, minute, 0, 0);
+    return timeFormatter.format(temp);
+  }
+
+  function clearContainer(el) {
+    if (!el) return;
+    while (el.firstChild) {
+      el.removeChild(el.firstChild);
+    }
+  }
+
+  function toggleEmptyState(container, placeholder, hasItems) {
+    if (!container || !placeholder) return;
+    placeholder.style.display = hasItems ? 'none' : 'block';
+    container.style.display = hasItems ? 'flex' : 'none';
+  }
+
+  function buildHistoryRow(session, options = {}) {
+    const {
+      showRepeatButton = false,
+      repeatLabel = 'Duplicate For Next Week',
+      emphasizeTitle = false,
+    } = options;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'history-row d-flex justify-content-between align-items-start';
+
+    const info = document.createElement('div');
+    info.className = 'history-row-info';
+    info.innerHTML = `
+      ${emphasizeTitle ? `<div class="history-title fw-semibold text-muted text-uppercase small mb-1">${session.title}</div>` : ''}
+      <div class="fw-semibold">${formatDateDisplay(session.date)}</div>
+      <div class="text-muted small">${formatTimeDisplay(session.start_time)} - ${formatTimeDisplay(session.end_time)}</div>
+      <div class="text-muted small">Capacity: ${session.capacity}</div>
+    `;
+    wrapper.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'history-row-actions';
+    if (showRepeatButton) {
+      const repeatBtn = document.createElement('button');
+      repeatBtn.type = 'button';
+      repeatBtn.className = 'btn btn-sm btn-bc-gold';
+      repeatBtn.setAttribute('data-action', 'duplicate-next-week');
+      repeatBtn.setAttribute('data-session-id', String(session.id));
+      repeatBtn.textContent = repeatLabel;
+      actions.appendChild(repeatBtn);
+    }
+    wrapper.appendChild(actions);
+    return wrapper;
+  }
+
+  function renderHistoryPanels(selectedTitleValue) {
+    if (!sameTypeList || !otherTypeList) return;
+    const normalized = normalizeTitle(selectedTitleValue);
+
+    const sameTypeSessions = trainingData
+      .filter(session => normalized && normalizeTitle(session.title) === normalized && parseISODate(session.date) <= today)
+      .sort((a, b) => {
+        const diff = parseISODate(b.date) - parseISODate(a.date);
+        if (diff !== 0) return diff;
+        return b.start_time.localeCompare(a.start_time);
+      })
+      .slice(0, 8);
+
+    clearContainer(sameTypeList);
+    sameTypeSessions.forEach(session =>
+      sameTypeList.appendChild(buildHistoryRow(session, { showRepeatButton: true }))
+    );
+    toggleEmptyState(sameTypeList, sameTypeEmpty, sameTypeSessions.length > 0);
+
+    const otherSessions = trainingData
+      .filter(session => !normalized || normalizeTitle(session.title) !== normalized)
+      .sort((a, b) => {
+        const diff = parseISODate(b.date) - parseISODate(a.date);
+        if (diff !== 0) return diff;
+        return b.start_time.localeCompare(a.start_time);
+      })
+      .slice(0, 8);
+
+    clearContainer(otherTypeList);
+    otherSessions.forEach(session =>
+      otherTypeList.appendChild(buildHistoryRow(session, {
+        showRepeatButton: true,
+        emphasizeTitle: true
+      }))
+    );
+    toggleEmptyState(otherTypeList, otherTypeEmpty, otherSessions.length > 0);
+  }
+
+  function showToast(message, variant = 'info') {
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.classList.remove('toast-success', 'toast-warning', 'toast-info');
+    toastEl.classList.add(`toast-${variant}`);
+    toastEl.classList.add('show');
+    clearTimeout(toastEl.hideTimeout);
+    toastEl.hideTimeout = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 4000);
+  }
+
+  function setInlineWarning(message) {
+    if (!inlineWarning) return;
+    inlineWarning.textContent = message;
+    inlineWarning.classList.remove('d-none');
+  }
+
+  function clearInlineWarning() {
+    if (!inlineWarning) return;
+    inlineWarning.textContent = '';
+    inlineWarning.classList.add('d-none');
+  }
+
+  function handleDuplicate(sessionId) {
+    const session = sessionMap.get(String(sessionId));
+    if (!session) return;
+
+    const nextDate = parseISODate(session.date);
+    nextDate.setDate(nextDate.getDate() + 7);
+    const nextDateIso = formatInputDate(nextDate);
+
+    const currentTitleValue = titleInput && titleInput.value ? titleInput.value : session.title;
+    const normalizedTargetTitle = normalizeTitle(currentTitleValue);
+
+    const existing = trainingData.some(item =>
+      normalizeTitle(item.title) === normalizedTargetTitle &&
+      item.date === nextDateIso
+    );
+
+    if (dateInput) dateInput.value = nextDateIso;
+    if (startInput) startInput.value = session.start_time;
+    if (endInput) endInput.value = session.end_time;
+    if (capacityInput) capacityInput.value = session.capacity;
+
+    renderHistoryPanels(titleInput ? titleInput.value : defaultSelectedTitle);
+
+    if (existing) {
+      setInlineWarning('A session already exists on that date. Please choose another day.');
+    } else {
+      clearInlineWarning();
+      showToast(`Duplicated for ${formatDateDisplay(nextDateIso)}. Click Add Session to save.`, 'success');
+    }
+
+    if (formEl) {
+      formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  if (titleInput && !titleInput.value && defaultSelectedTitle) {
+    titleInput.value = defaultSelectedTitle;
+  }
+  renderHistoryPanels(titleInput ? titleInput.value : defaultSelectedTitle);
+
+  if (titleInput) {
+    ['input', 'change'].forEach(evt => {
+      titleInput.addEventListener(evt, () => renderHistoryPanels(titleInput.value));
+    });
+  }
+
+  [dateInput, startInput, endInput, capacityInput, titleInput].forEach(input => {
+    if (!input) return;
+    ['input', 'change'].forEach(evt => input.addEventListener(evt, clearInlineWarning));
+  });
+
+  document.addEventListener('click', function(event) {
+    const target = event.target.closest('[data-action=\"duplicate-next-week\"]');
+    if (target) {
+      event.preventDefault();
+      handleDuplicate(target.getAttribute('data-session-id'));
+    }
+  });
+});
+</script>
+
+<style>
+  :root {
+    --bc-gold: #f6c851;
+    --bc-gold-hover: #f9d880;
+    --bc-gold-active: #d9b03b;
+    --history-row: #fdf9f0;
+    --history-row-border: #f0e8d5;
+  }
+
+  body {
+    background-color: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .calendar-top-row > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .calendar-top-row > [class*="col-"] > * {
+    width: 100%;
+  }
+
+  /* ---- UNIVERSAL BUTTON ANIMATION ---- */
+  .btn,
+  .fc-button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-transform: capitalize !important;
+    transition:
+      background-color 0.2s ease,
+      transform 0.15s ease,
+      box-shadow 0.15s ease !important;
+  }
+
+  /* ---- GOLD BUTTONS (Add, Back, Calendar) ---- */
+  .btn-back,
+  .btn-bc-gold,
+  .fc-button-primary {
+    background-color: var(--bc-gold) !important;
+    border: none !important;
+    color: #fff !important;
+  }
+
+  .btn:hover,
+  .fc-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn:active,
+  .fc-button-primary:active {
+    transform: scale(0.96);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-back:hover,
+  .btn-bc-gold:hover,
+  .fc-button-primary:hover {
+    background-color: var(--bc-gold-hover) !important;
+  }
+
+  .btn-back:active,
+  .btn-bc-gold:active,
+  .fc-button-primary:active {
+    background-color: var(--bc-gold-active) !important;
+  }
+
+  .btn-outline-secondary {
+    border-color: #d5d0c2;
+    color: #5b5a57;
+    background-color: #fff;
+  }
+
+  .btn-outline-secondary:hover {
+    background-color: #f3efe4;
+    border-color: #d5d0c2;
+    color: #3b372a;
+  }
+
+  .btn-edit {
+    background-color: #55595c !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  .btn-edit:hover {
+    background-color: #6c757d !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-edit:active {
+    transform: scale(0.96);
+    background-color: #868e96 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ---- RED BUTTON (Remove) ---- */
+  .btn-remove {
+    background-color: #c0392b !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .btn-remove:hover {
+    background-color: #d9534f !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-remove:active {
+    transform: scale(0.96);
+    background-color: #e57373 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ---- RIGHT SIDEBAR CARDS ---- */
+  .history-card {
+    border: none;
+    border-radius: 16px;
+    background-color: #fff;
+  }
+
+  .history-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .history-scroll-shell {
+    position: relative;
+    overflow: hidden;
+    padding-left: 0.2rem;
+    width: 100%;
+  }
+
+  .history-scroll-shell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    height: 100%;
+    pointer-events: none;
+    background: linear-gradient(270deg, #fff, rgba(255, 255, 255, 0));
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: row;
+    gap: 0.85rem;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 0.5rem;
+    padding-right: 1.2rem;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+  }
+
+  .history-list::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .history-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .history-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+
+  .history-list-lg {
+    min-height: 140px;
+  }
+
+  .history-list-sm {
+    min-height: 140px;
+  }
+
+  .history-row {
+    background-color: var(--history-row);
+    border: 1px solid var(--history-row-border);
+    border-radius: 12px;
+    padding: 0.75rem 0.95rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    flex: 0 0 210px;
+    max-width: 210px;
+    scroll-snap-align: start;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+  }
+
+  .history-row:hover {
+    background-color: #f8f1df;
+    transform: translateY(-2px);
+  }
+
+  .history-row-info {
+    margin-right: 1rem;
+  }
+
+  .history-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .history-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    margin-top: 0.65rem;
+  }
+
+  .history-row-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .history-empty {
+    border: 1px dashed var(--history-row-border);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #6f6650;
+    background-color: #fff;
+  }
+
+  .badge.text-bg-light {
+    background-color: #f3efe4 !important;
+    color: #6b5c3d !important;
+  }
+
+  .calendar-form-card .card {
+    border-radius: 16px;
+  }
+
+  .calendar-form-shell {
+    border: 1px solid #efe7d5;
+    border-radius: 20px;
+    background-color: #fff;
+    box-shadow: 0 10px 24px rgba(14, 30, 37, 0.04);
+  }
+
+  .form-grid {
+    margin-top: 0.5rem;
+  }
+
+  .form-grid .form-field label {
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+    color: #3c3a36;
+  }
+
+  .form-grid .form-field input {
+    min-height: 44px;
+  }
+
+  .calendar-form-shell .form-text {
+    margin-top: 0.1rem;
+  }
+
+  .form-actions {
+    border-top: 1px solid #f1ecdf;
+    padding-top: 1rem;
+  }
+
+  .duplicate-warning {
+    font-size: 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #f6c851;
+    background-color: #fff7df;
+    color: #775800;
+  }
+
+  @media (max-width: 991.98px) {
+    .calendar-top-row > [class*="col-"] {
+      display: block;
+    }
+
+    .history-row {
+      flex: 0 0 85%;
+    }
+  }
+
+  .calendar-toast {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    padding: 0.85rem 1.1rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    background-color: #2c3e50;
+    z-index: 1080;
+    pointer-events: none;
+  }
+
+  .calendar-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .calendar-toast.toast-success {
+    background-color: #2f855a;
+  }
+
+  .calendar-toast.toast-warning {
+    background-color: #d97706;
+  }
+
+  .calendar-toast.toast-info {
+    background-color: #2c3e50;
+  }
+
+  /* ---- REMOVAL MODAL ---- */
+  .calendar-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(17, 21, 32, 0.55);
+    z-index: 1090;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .calendar-modal.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .calendar-modal-dialog {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 20px;
+    background: #fff;
+    padding: 2rem;
+    transform: translateY(25px);
+    transition: transform 0.25s ease;
+  }
+
+  .calendar-modal.show .calendar-modal-dialog {
+    transform: translateY(0);
+  }
+
+  .calendar-modal-header {
+    border-bottom: 1px solid #f0ebe0;
+    padding-bottom: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .calendar-modal-body {
+    color: #4c4943;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .calendar-modal-footer {
+    margin-top: 1.75rem;
+  }
+
+  .calendar-modal-close {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  body.calendar-modal-open {
+    overflow: hidden;
+  }
+
+  /* ---- CALENDAR STYLING ---- */
+  .calendar-container {
+    background-color: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 25px;
+  }
+
+  #calendar {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Toolbar */
+  .fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: 600;
+    color: #222;
+  }
+
+  /* Day cells */
+  .fc-daygrid-day {
+    background-color: #fff !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* Today highlight */
+  .fc-day-today {
+    background-color: #fff9e9 !important;
+    border: 1px solid #f2d56f !important;
+  }
+
+  /* Event blocks */
+  .fc-event {
+    background-color: var(--bc-gold) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 2px 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease;
+  }
+
+  .fc-event:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .fc-event:active {
+    transform: scale(0.97);
+  }
+
+  /* Day headers */
+  .fc-col-header-cell-cushion {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+
+  .fc-daygrid-day-number {
+    color: #555;
+    font-weight: 500;
+  }
+
+  /* Layout padding */
+  .container-fluid {
+    padding-bottom: 3rem;
+  }
+
+  /* Form styling */
+  form p {
+    margin: 0;
+  }
+
+  form label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: #555;
+  }
+
+  form input {
+    border: 1px solid #e5decc;
+    border-radius: 10px;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.95rem;
+  }
+
+  form input[type="date"],
+  form input[type="time"] {
+    min-width: 140px;
+  }
+
+  form input:focus {
+    outline: none;
+    border-color: var(--bc-gold);
+    box-shadow: 0 0 0 2px rgba(246, 200, 81, 0.25);
+  }
+</style>
+{% endblock %}

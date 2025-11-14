@@ -1,0 +1,14 @@
+{% extends 'training/base_calendar_student.html' %}
+{% load static %}
+
+{% block action_button %}
+<button type="submit" class="btn text-white" style="background-color:#c9a64d;">Reserve Spot</button>
+{% endblock %}
+
+{% block title %}Reserve Training Session - BC Hatchery{% endblock %}
+
+{% url 'dashboard:my_trainings' as my_trainings_url %}
+
+{% with page_title="Reserve Training Calendar" back_url=my_trainings_url back_text='← Back to My Trainings' %}
+  {{ block.super }}
+{% endwith %}

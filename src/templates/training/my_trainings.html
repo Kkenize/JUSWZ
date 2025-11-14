@@ -10,8 +10,8 @@
   <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mt-3 mb-4">
     <!-- LEFT SIDE -->
     <div>
-      <h1 class="fw-bold mb-1">Training Management</h1>
-      <p class="text-muted" id="greeting-text" style="margin-top: 0.25rem;">Manage training levels, attendance, and materials</p>
+      <h1 class="fw-bold mb-1">My Trainings</h1>
+      <p class="text-muted" id="greeting-text" style="margin-top: 0.25rem;">Reserve and track your Hatchery training sessions</p>
     </div>
 
     <!-- RIGHT SIDE -->
@@ -21,13 +21,12 @@
         <button class="btn btn-bc-gold text-white">Search</button>
       </div>
       <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'dashboard:training_list' %}" class="btn btn-bc-gold text-white">Show All Trainings</a>
-        <a href="{% url 'dashboard:training_past' %}" class="btn btn-bc-gold text-white">My Past Trainings</a>
+        <a href="{% url 'dashboard:training_list_student' %}" class="btn btn-bc-gold text-white">Show All Trainings</a>
       </div>
     </div>
   </div>
 
-  <!-- ===== TRAINING CONTAINER ===== -->
+<!-- ===== TRAINING CONTAINER ===== -->
   <div id="trainingContainer" class="d-flex flex-column gap-4">
 
     <!-- 3D Printing Training -->
@@ -57,9 +56,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -75,9 +72,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -93,9 +88,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -111,9 +104,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -144,9 +135,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -162,9 +151,7 @@
                      style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -198,9 +185,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -216,9 +201,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -234,9 +217,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -271,9 +252,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -289,9 +268,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -307,9 +284,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -341,9 +316,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -381,9 +354,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -399,9 +370,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -417,9 +386,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -451,9 +418,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -503,9 +468,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -521,9 +484,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -539,9 +500,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
@@ -577,9 +536,7 @@
                     style="height:auto;max-height:300px;object-fit:contain;" />
               </div>
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:calendar_add' %}" class="btn text-white" style="background-color:#c9a64d;">Add</a>
-                <a href="{% url 'dashboard:calendar_edit' %}" class="btn text-white" style="background-color:#55595c;">Edit</a>
-                <a href="{% url 'dashboard:calendar_remove' %}" class="btn text-white" style="background-color:#c0392b;">Remove</a>
+                <a href="{% url 'dashboard:training_reserve' %}" class="btn text-white" style="background-color:#c9a64d;">Reserve Training</a>
               </div>
             </div>
           </div>
