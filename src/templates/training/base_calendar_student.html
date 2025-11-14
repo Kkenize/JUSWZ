@@ -126,9 +126,66 @@
   <div class="calendar-container shadow-sm rounded p-4" style="background-color:#f7f4ee;">
     <div id="calendar"></div>
   </div>
+  {% if calendar_mode == 'reserve' %}
+  <div class="reserve-action-panel card shadow-sm mt-4">
+    <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3">
+      <div class="reserve-action-copy text-muted" id="reserve-selected-hint">
+        Select any gold session on the calendar to review the details and reserve your spot.
+      </div>
+      <div class="ms-md-auto">
+        <button type="button" class="btn btn-bc-gold text-white" id="reserve-selected-btn" disabled>
+          Reserve Selected Session
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div id="reservation-modal" class="reservation-modal" role="dialog" aria-modal="true" aria-hidden="true" hidden>
+  <div class="reservation-modal-dialog">
+    <div class="reservation-modal-header">
+      <div>
+        <p class="reservation-modal-subtitle">Confirm reservation</p>
+        <h4 class="reservation-modal-title" id="reservation-modal-title">Reserve training session</h4>
+      </div>
+      <button type="button"
+              class="reservation-close-btn"
+              data-dismiss="reservation"
+              aria-label="Close reservation dialog">
+        ✕
+      </button>
+    </div>
+    <div class="reservation-modal-body">
+      <span class="reservation-chip">Training session</span>
+      <h5 class="reservation-session-title" id="reservation-training-title"></h5>
+      <p class="reservation-session-note">Review the session details below. Your seat is held once you confirm.</p>
+      <div class="reservation-detail-card">
+        <div class="reservation-detail-row">
+          <span class="reservation-detail-label">When</span>
+          <span class="reservation-detail-value" id="reservation-training-schedule"></span>
+        </div>
+        <div class="reservation-detail-row">
+          <span class="reservation-detail-label">Category</span>
+          <span class="reservation-detail-value" id="reservation-training-category"></span>
+        </div>
+      </div>
+    </div>
+    <div class="reservation-modal-footer">
+      <button type="button" class="reservation-btn ghost" data-dismiss="reservation">
+        Cancel
+      </button>
+      <button type="button" class="reservation-btn primary" id="reservation-confirm-btn">
+        Confirm Reservation
+      </button>
+    </div>
+  </div>
 </div>
 
 {{ training_sessions|json_script:"training-session-data" }}
+{{ prerequisite_map|json_script:"training-prereq-map" }}
+{{ completed_categories|json_script:"training-completed-categories" }}
+{{ reserved_sessions|json_script:"training-reserved-session-ids" }}
 
 <!-- FullCalendar CDN -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
@@ -140,6 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const calendarEl = document.getElementById('calendar');
   const eventsUrl = "{% url 'dashboard:training_list_api' %}";
   const calendarEditUrl = "{% url 'dashboard:calendar_edit' %}";
+  const myTrainingsUrl = "{% url 'dashboard:my_trainings' %}";
+  const reservationUrl = "{% url 'dashboard:training_reserve' %}";
   const calendarMode = "{{ calendar_mode|default:'add' }}";
   const removeForm = document.getElementById('calendar-remove-form');
   const removeIdInput = document.getElementById('calendar-remove-id');
@@ -147,6 +206,27 @@ document.addEventListener('DOMContentLoaded', function() {
   const removeModalBody = document.getElementById('calendar-remove-modal-body');
   const removeModalConfirm = document.getElementById('calendar-remove-confirm');
   const removeModalDismissButtons = document.querySelectorAll('[data-dismiss="calendar-remove"]');
+  const reservationModal = document.getElementById('reservation-modal');
+  const reservationTrainingTitle = document.getElementById('reservation-training-title');
+  const reservationTrainingSchedule = document.getElementById('reservation-training-schedule');
+  const reservationTrainingCategory = document.getElementById('reservation-training-category');
+  const reservationConfirmBtn = document.getElementById('reservation-confirm-btn');
+  const reservationConfirmLabel = reservationConfirmBtn ? reservationConfirmBtn.textContent : 'Confirm Reservation';
+  const reservationDismissButtons = document.querySelectorAll('[data-dismiss="reservation"]');
+  const reserveSelectedBtn = document.getElementById('reserve-selected-btn');
+  const reserveSelectedHint = document.getElementById('reserve-selected-hint');
+  const prereqMapEl = document.getElementById('training-prereq-map');
+  const completedCategoriesEl = document.getElementById('training-completed-categories');
+  const reservedSessionsEl = document.getElementById('training-reserved-session-ids');
+  const prereqConfig = prereqMapEl ? JSON.parse(prereqMapEl.textContent) : {};
+  const trainingLookup = prereqConfig.by_title || {};
+  const completedCategorySet = new Set((completedCategoriesEl ? JSON.parse(completedCategoriesEl.textContent) : []).map(String));
+  const reservedSessionSet = new Set((reservedSessionsEl ? JSON.parse(reservedSessionsEl.textContent) : []).map(String));
+  const tooltipLockedMessage = "Complete Level 1 in this category to unlock this training.";
+  const tooltipReservedMessage = "You already reserved this session.";
+  let pendingReservationEvent = null;
+  let selectedReservationEvent = null;
+  let reservationSubmitting = false;
   let pendingRemovalEvent = null;
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
@@ -163,6 +243,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (dateInput) dateInput.value = info.startStr;
     },
     eventClick: handleCalendarEventClick,
+    eventDidMount: function(info) {
+      if (calendarMode === 'reserve') {
+        applyReservationState(info);
+      }
+    },
     eventSources: [{
       url: eventsUrl,
       method: 'GET'
@@ -202,9 +287,42 @@ document.addEventListener('DOMContentLoaded', function() {
     minute: '2-digit'
   });
 
+  function getCookie(name) {
+    const cookieString = document.cookie;
+    if (!cookieString) return null;
+    const cookies = cookieString.split(';');
+    for (let i = 0; i < cookies.length; i += 1) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === `${name}=`) {
+        return decodeURIComponent(cookie.substring(name.length + 1));
+      }
+    }
+    return null;
+  }
+
+  const csrfToken = getCookie('csrftoken');
+
+  updateReserveSelectedState(null);
+
   function formatEventTimestamp(dateObj) {
     if (!dateObj) return '';
     return `${dateFormatter.format(dateObj)} at ${timeFormatter.format(dateObj)}`;
+  }
+
+  function formatEventRange(event) {
+    if (!event) return '';
+    const hasStart = !!event.start;
+    const hasEnd = !!event.end;
+    if (hasStart && hasEnd) {
+      const datePart = dateFormatter.format(event.start);
+      const startTime = timeFormatter.format(event.start);
+      const endTime = timeFormatter.format(event.end);
+      return `${datePart} · ${startTime} - ${endTime}`;
+    }
+    if (hasStart) {
+      return formatEventTimestamp(event.start);
+    }
+    return '';
   }
 
   function openRemoveModal(event) {
@@ -246,6 +364,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleCalendarEventClick(info) {
     if (!info.event || !info.event.id) return;
 
+    if (calendarMode === 'reserve') {
+      handleReservationClick(info);
+      return;
+    }
+
     if (calendarMode === 'remove') {
       openRemoveModal(info.event);
       return;
@@ -277,13 +400,57 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   document.addEventListener('keydown', function(evt) {
-    if (evt.key === 'Escape' && removeModal && removeModal.classList.contains('show')) {
+    if (evt.key !== 'Escape') return;
+    if (removeModal && removeModal.classList.contains('show')) {
       closeRemoveModal();
+      return;
+    }
+    if (reservationModal && reservationModal.classList.contains('show')) {
+      closeReservationModal();
     }
   });
 
+  reservationDismissButtons.forEach(function(button) {
+    button.addEventListener('click', closeReservationModal);
+  });
+
+  if (reservationModal) {
+    reservationModal.addEventListener('click', function(evt) {
+      if (evt.target === reservationModal) {
+        closeReservationModal();
+      }
+    });
+  }
+
+  if (reservationConfirmBtn) {
+    reservationConfirmBtn.addEventListener('click', submitReservation);
+  }
+
+  if (reserveSelectedBtn) {
+    reserveSelectedBtn.addEventListener('click', function() {
+      if (!selectedReservationEvent) {
+        showToast('Select a session from the calendar first.', 'warning');
+        return;
+      }
+      openReservationModal(selectedReservationEvent, selectedReservationEvent.extendedProps && selectedReservationEvent.extendedProps.prereqMeta);
+    });
+  }
+
   function normalizeTitle(value) {
     return (value || '').trim().toLowerCase();
+  }
+
+  function getTrainingMetadataByTitle(title) {
+    const normalized = normalizeTitle(title);
+    if (!normalized) return null;
+    return trainingLookup[normalized] || null;
+  }
+
+  function isTrainingLocked(metadata) {
+    if (!metadata || !metadata.level || metadata.level <= 1) {
+      return false;
+    }
+    return !completedCategorySet.has(metadata.category);
   }
 
   function parseISODate(value) {
@@ -310,6 +477,223 @@ document.addEventListener('DOMContentLoaded', function() {
     const temp = new Date();
     temp.setHours(hour, minute, 0, 0);
     return timeFormatter.format(temp);
+  }
+
+  function applyReservationState(info) {
+    if (!info || !info.event) return;
+    const event = info.event;
+    const meta = event.extendedProps && event.extendedProps.prereqMeta
+      ? event.extendedProps.prereqMeta
+      : getTrainingMetadataByTitle(event.title);
+    const eventId = String(event.id || (event.extendedProps && event.extendedProps.publicId) || '');
+    const isReserved = reservedSessionSet.has(eventId);
+    const locked = isReserved || isTrainingLocked(meta);
+    if (typeof event.setExtendedProp === 'function') {
+      event.setExtendedProp('prereqMeta', meta);
+      event.setExtendedProp('isReserved', isReserved);
+      event.setExtendedProp('isLocked', locked);
+    }
+
+    const el = info.el;
+    if (!el) return;
+
+    el.dataset.eventId = eventId;
+    el.dataset.prereqState = locked ? (isReserved ? 'reserved' : 'locked') : 'unlocked';
+    el.dataset.trainingLevel = meta && meta.level ? meta.level : '';
+    el.dataset.trainingCategory = meta && meta.category ? meta.category : '';
+
+    el.classList.remove('training-locked-event', 'training-reserved-event');
+    if (locked) {
+      if (isReserved) {
+        el.classList.add('training-reserved-event');
+        el.setAttribute('title', tooltipReservedMessage);
+      } else {
+        el.classList.add('training-locked-event');
+        el.setAttribute('title', tooltipLockedMessage);
+      }
+      el.setAttribute('aria-disabled', 'true');
+      el.style.cursor = 'not-allowed';
+    } else {
+      el.removeAttribute('title');
+      el.removeAttribute('aria-disabled');
+      el.style.cursor = '';
+    }
+  }
+
+  function updateReservationStateForAllEvents() {
+    if (calendarMode !== 'reserve' || !calendar) return;
+    if (typeof calendar.refetchEvents === 'function') {
+      calendar.refetchEvents();
+    } else if (typeof calendar.render === 'function') {
+      calendar.render();
+    }
+  }
+
+  function openReservationModal(event, providedMeta) {
+    if (!reservationModal || !event) return;
+    const meta = providedMeta || (event.extendedProps && event.extendedProps.prereqMeta) || getTrainingMetadataByTitle(event.title);
+    pendingReservationEvent = event;
+    if (reservationTrainingTitle) {
+      reservationTrainingTitle.textContent = event.title || 'Training Session';
+    }
+    if (reservationTrainingSchedule) {
+      reservationTrainingSchedule.textContent = formatEventRange(event);
+    }
+    if (reservationTrainingCategory) {
+      if (meta && meta.category_label) {
+        const levelLabel = meta.level ? `Level ${meta.level}` : '';
+        const divider = levelLabel ? ' • ' : '';
+        reservationTrainingCategory.textContent = `${meta.category_label}${divider}${levelLabel}`;
+      } else {
+        reservationTrainingCategory.textContent = '';
+      }
+    }
+    reservationModal.hidden = false;
+    requestAnimationFrame(() => {
+      reservationModal.classList.add('show');
+      reservationModal.setAttribute('aria-hidden', 'false');
+    });
+    document.body.classList.add('reserve-modal-open');
+    setReservationSubmitting(false);
+    setTimeout(() => {
+      if (reservationConfirmBtn) {
+        reservationConfirmBtn.focus();
+      }
+    }, 50);
+  }
+
+  function closeReservationModal() {
+    if (!reservationModal) return;
+    reservationModal.classList.remove('show');
+    reservationModal.setAttribute('aria-hidden', 'true');
+    reservationModal.hidden = true;
+    document.body.classList.remove('reserve-modal-open');
+    pendingReservationEvent = null;
+    setReservationSubmitting(false);
+  }
+
+  function setReservationSubmitting(isSubmitting) {
+    reservationSubmitting = !!isSubmitting;
+    if (reservationConfirmBtn) {
+      reservationConfirmBtn.disabled = reservationSubmitting;
+      reservationConfirmBtn.textContent = reservationSubmitting ? 'Reserving...' : reservationConfirmLabel;
+    }
+  }
+
+  function redirectToMyTrainings(delayMs = 0) {
+    if (!myTrainingsUrl) return;
+    const navigate = () => {
+      try {
+        window.location.replace(myTrainingsUrl);
+      } catch (err) {
+        window.location.href = myTrainingsUrl;
+      }
+    };
+    if (delayMs > 0) {
+      setTimeout(navigate, delayMs);
+    } else {
+      navigate();
+    }
+  }
+
+  function updateReserveSelectedState(event) {
+    if (!reserveSelectedBtn) return;
+    if (event) {
+      reserveSelectedBtn.disabled = false;
+      reserveSelectedBtn.textContent = `Reserve: ${event.title || 'Training Session'}`;
+      if (reserveSelectedHint) {
+        reserveSelectedHint.textContent = 'Need to review the details again? Use the button to reopen the confirmation modal.';
+      }
+    } else {
+      reserveSelectedBtn.disabled = true;
+      reserveSelectedBtn.textContent = 'Reserve Selected Session';
+      if (reserveSelectedHint) {
+        reserveSelectedHint.textContent = 'Select any gold session on the calendar to review the details and reserve your spot.';
+      }
+    }
+  }
+
+  function handleReservationClick(info) {
+    const event = info.event;
+    const eventId = String(event.id || '');
+    if (reservedSessionSet.has(eventId)) {
+      showToast(tooltipReservedMessage, 'info');
+      return;
+    }
+    const meta = getTrainingMetadataByTitle(event.title);
+    if (isTrainingLocked(meta)) {
+      showToast(tooltipLockedMessage, 'warning');
+      return;
+    }
+    selectedReservationEvent = event;
+    updateReserveSelectedState(event);
+    openReservationModal(event, meta);
+  }
+
+  function markEventAsReserved(event) {
+    if (!event) return;
+    const eventId = String(event.id || '');
+    if (!eventId) return;
+    reservedSessionSet.add(eventId);
+    if (typeof event.setExtendedProp === 'function') {
+      event.setExtendedProp('isReserved', true);
+      event.setExtendedProp('isLocked', true);
+    }
+    const elements = calendarEl.querySelectorAll(`[data-event-id="${eventId}"]`);
+    elements.forEach(el => {
+      el.classList.add('training-reserved-event');
+      el.classList.remove('training-locked-event');
+      el.style.cursor = 'not-allowed';
+      el.setAttribute('title', tooltipReservedMessage);
+      el.dataset.prereqState = 'reserved';
+      el.setAttribute('aria-disabled', 'true');
+    });
+  }
+
+  function submitReservation() {
+    if (!pendingReservationEvent || reservationSubmitting) return;
+    if (!csrfToken) {
+      showToast('Missing CSRF token. Refresh and try again.', 'warning');
+      return;
+    }
+    setReservationSubmitting(true);
+    fetch(reservationUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ training_id: pendingReservationEvent.id })
+    })
+      .then(response => response.json().catch(() => ({})).then(data => ({ response, data })))
+      .then(({ response, data }) => {
+        const success = response.ok && (typeof data.ok === 'undefined' || data.ok);
+        if (!success) {
+          const message = data && data.error ? data.error : 'Unable to reserve this training.';
+          throw new Error(message);
+        }
+        if (Array.isArray(data.completed_categories)) {
+          completedCategorySet.clear();
+          data.completed_categories.forEach(cat => completedCategorySet.add(String(cat)));
+          updateReservationStateForAllEvents();
+        }
+        markEventAsReserved(pendingReservationEvent);
+        requestAnimationFrame(() => {
+          closeReservationModal();
+          selectedReservationEvent = null;
+          updateReserveSelectedState(null);
+          redirectToMyTrainings(50);
+        });
+      })
+      .catch(error => {
+        const message = error && error.message ? error.message : 'Unable to reserve this training.';
+        showToast(message, 'warning');
+      })
+      .finally(() => {
+        setReservationSubmitting(false);
+      });
   }
 
   function clearContainer(el) {
@@ -806,6 +1190,233 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #2c3e50;
   }
 
+  .training-locked-event {
+    background-color: #d9d9d9 !important;
+    border-color: #d9d9d9 !important;
+    color: #6c757d !important;
+    opacity: 0.85;
+    cursor: not-allowed !important;
+  }
+
+  .training-locked-event .fc-event-title,
+  .training-locked-event .fc-event-time {
+    color: inherit !important;
+  }
+
+  .training-reserved-event,
+  .fc-event.training-reserved-event,
+  .fc-daygrid-event.training-reserved-event {
+    background-color: #b3f2c7 !important;
+    border-color: #9de2b2 !important;
+    color: #065f36 !important;
+    opacity: 0.95;
+    cursor: not-allowed !important;
+  }
+
+  .training-reserved-event .fc-event-title,
+  .training-reserved-event .fc-event-time,
+  .fc-event.training-reserved-event .fc-event-title,
+  .fc-event.training-reserved-event .fc-event-time {
+    color: inherit !important;
+  }
+
+  .training-reserved-event .fc-event-dot,
+  .fc-event.training-reserved-event .fc-event-dot {
+    border-color: #0f9c5b !important;
+    background-color: #0f9c5b !important;
+  }
+
+  .reservation-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 2000;
+  }
+
+  .reservation-modal.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .reservation-modal[hidden] {
+    display: none;
+  }
+
+  .reservation-modal-dialog {
+    background-color: #fcfcfc;
+    border-radius: 20px;
+    padding: 2rem;
+    width: min(90vw, 460px);
+    box-shadow:
+      0 18px 40px rgba(15, 23, 42, 0.18),
+      0 2px 8px rgba(15, 23, 42, 0.08);
+    transform: scale(0.98);
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .reservation-modal.show .reservation-modal-dialog {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .reservation-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .reservation-modal-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .reservation-modal-subtitle {
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 600;
+  }
+
+  .reservation-close-btn {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: transparent;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    color: #6b7280;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .reservation-close-btn:hover {
+    background: rgba(148, 163, 184, 0.15);
+    color: #111827;
+    border-color: rgba(148, 163, 184, 0.7);
+  }
+
+  .reservation-modal-body {
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .reservation-chip {
+    display: inline-flex;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(249, 196, 81, 0.18);
+    color: #b58107;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .reservation-session-title {
+    margin-top: 0.75rem;
+    margin-bottom: 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .reservation-session-note {
+    color: #6b7280;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .reservation-detail-card {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  }
+
+  .reservation-detail-row + .reservation-detail-row {
+    margin-top: 0.75rem;
+  }
+
+  .reservation-detail-label {
+    display: block;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin-bottom: 0.25rem;
+  }
+
+  .reservation-detail-value {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .reservation-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .reservation-btn {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.65rem 1.5rem;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .reservation-btn.ghost {
+    background: transparent;
+    color: #4b5563;
+    border-color: rgba(148, 163, 184, 0.6);
+  }
+
+  .reservation-btn.ghost:hover {
+    background: rgba(148, 163, 184, 0.12);
+    color: #111827;
+  }
+
+  .reservation-btn.primary {
+    background: var(--bc-gold);
+    color: #fff;
+    border-color: var(--bc-gold);
+    box-shadow: 0 6px 16px rgba(246, 200, 81, 0.35);
+  }
+
+  .reservation-btn.primary:hover {
+    background: #eab341;
+    border-color: #eab341;
+  }
+
+  body.reserve-modal-open {
+    overflow: hidden;
+  }
+
+  .reserve-action-panel {
+    border: 1px solid #efe7d5;
+    border-radius: 18px;
+    background-color: #fff;
+  }
+
+  .reserve-action-panel .card-body {
+    padding: 1.25rem 1.5rem;
+  }
+
   /* ---- REMOVAL MODAL ---- */
   .calendar-modal {
     position: fixed;
@@ -915,6 +1526,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
   .fc-event:active {
     transform: scale(0.97);
+  }
+
+  .fc-event.training-reserved-event,
+  .fc-daygrid-event.training-reserved-event {
+    background-color: #b3f2c7 !important;
+    border-color: #9de2b2 !important;
+    color: #065f36 !important;
+  }
+
+  .fc-event.training-reserved-event .fc-event-title,
+  .fc-daygrid-event.training-reserved-event .fc-event-title,
+  .fc-event.training-reserved-event .fc-event-time,
+  .fc-daygrid-event.training-reserved-event .fc-event-time {
+    color: inherit !important;
+  }
+
+  .fc-event.training-reserved-event .fc-event-dot,
+  .fc-daygrid-event.training-reserved-event .fc-event-dot {
+    border-color: #0f9c5b !important;
+    background-color: #0f9c5b !important;
   }
 
   /* Day headers */

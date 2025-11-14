@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -9,6 +11,7 @@ from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Training, create_google_calendar_event
 from .forms import TrainingSessionForm
+from .prerequisites import get_training_metadata, serialize_prereq_map
 
 
 @never_cache
@@ -363,6 +366,22 @@ def training_list_api(request):
         })
     return JsonResponse(data, safe=False)
 
+
+def _get_completed_level_one_categories(user):
+    """Return a set of category keys where the user finished a Level 1 training."""
+
+    if not user.is_authenticated:
+        return set()
+
+    today = timezone.localdate()
+    completed = set()
+    user_trainings = user.enrolled_trainings.filter(date__lte=today).only('title', 'date')
+    for training in user_trainings:
+        metadata = get_training_metadata(training.title)
+        if metadata and metadata.get('level') == 1:
+            completed.add(metadata['category'])
+    return completed
+
 @never_cache
 @login_required
 def my_trainings(request):
@@ -392,13 +411,109 @@ def my_trainings(request):
 @never_cache
 @login_required
 def training_reserve(request):
-    """Placeholder for student training reservation (future feature)."""
+    """Student training reservation calendar with prerequisite gating."""
+
     user_profile = request.user.userprofile
     if user_profile.role != 'student':
         return HttpResponseForbidden("You do not have permission to access this page.")
+
+    if request.method == 'POST':
+        return _handle_reservation_post(request)
+
+    trainings_qs = Training.objects.all().order_by('-date', '-start_time')
+    training_sessions = [
+        {
+            "id": t.id,
+            "title": t.title,
+            "date": t.date.isoformat(),
+            "start_time": t.start_time.strftime("%H:%M"),
+            "end_time": t.end_time.strftime("%H:%M"),
+            "capacity": t.capacity,
+        }
+        for t in trainings_qs
+    ]
+
+    completed_categories = sorted(_get_completed_level_one_categories(request.user))
+    reserved_sessions = list(request.user.enrolled_trainings.values_list('id', flat=True))
+
     return render(request, "training/training_reserve.html", {
         "user_profile": user_profile,
+        "training_sessions": training_sessions,
+        "calendar_mode": "reserve",
+        "page_title": "Reserve Training Calendar",
+        "prerequisite_map": serialize_prereq_map(),
+        "completed_categories": completed_categories,
+        "reserved_sessions": reserved_sessions,
     })
+
+
+def _handle_reservation_post(request):
+    payload = {}
+    if request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            payload = {}
+    else:
+        # Support form submissions / URL encoded data
+        payload = request.POST
+
+    training_id = payload.get('training_id')
+    if not training_id:
+        return JsonResponse({
+            "ok": False,
+            "error": "Missing training id.",
+        }, status=400)
+
+    try:
+        training = Training.objects.get(id=training_id)
+    except Training.DoesNotExist:
+        return JsonResponse({
+            "ok": False,
+            "error": "Training session not found.",
+        }, status=404)
+
+    user = request.user
+    metadata = get_training_metadata(training.title)
+    completed_categories = _get_completed_level_one_categories(user)
+
+    if metadata and metadata.get('level', 1) > 1 and metadata['category'] not in completed_categories:
+        return JsonResponse({
+            "ok": False,
+            "error": "Complete Level 1 in this category to unlock this training.",
+        }, status=403)
+
+    if training.participants.filter(id=user.id).exists():
+        return JsonResponse({
+            "ok": False,
+            "error": "You have already reserved this session.",
+        }, status=400)
+
+    if training.is_full:
+        return JsonResponse({
+            "ok": False,
+            "error": "Sorry, this session is already full.",
+        }, status=400)
+
+    training.participants.add(user)
+
+    updated_completed = sorted(_get_completed_level_one_categories(user))
+    response = {
+        "ok": True,
+        "message": "Reservation confirmed! Check your dashboard for details.",
+        "training_id": training.id,
+        "completed_categories": updated_completed,
+    }
+
+    if metadata:
+        response.update({
+            "category": metadata['category'],
+            "category_label": metadata.get('category_label'),
+            "level": metadata.get('level'),
+        })
+
+    return JsonResponse(response)
+
 
 @never_cache
 @login_required
