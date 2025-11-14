@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, time as time_cls, timedelta
 
 from collections import defaultdict
 
@@ -415,6 +416,24 @@ def _get_completed_levels_by_category(user):
     return {category: set(levels) for category, levels in completed.items()}
 
 
+def _get_training_start_datetime(training):
+    """Return an aware datetime for the start of the provided training."""
+
+    start_time = training.start_time or time_cls(0, 0)
+    naive_start = datetime.combine(training.date, start_time)
+    if timezone.is_naive(naive_start):
+        return timezone.make_aware(naive_start, timezone.get_current_timezone())
+    return naive_start
+
+
+def _can_user_cancel_training(training, reference_time=None):
+    """Return True if the user may cancel the training at the given moment."""
+
+    reference = reference_time or timezone.now()
+    start_dt = _get_training_start_datetime(training)
+    return (start_dt - reference) > timedelta(minutes=15)
+
+
 def _get_completed_level_one_categories(user):
     """Return a set of category keys where the user finished a Level 1 training."""
 
@@ -470,6 +489,7 @@ def my_trainings(request):
         return HttpResponseForbidden("You do not have permission to access this page.")
 
     today = timezone.localdate()
+    now = timezone.now()
     reserved_trainings_qs = request.user.enrolled_trainings.filter(date__gte=today).order_by('date', 'start_time')
     reserved_trainings = [
         {
@@ -478,6 +498,7 @@ def my_trainings(request):
             "date": training.date,
             "start_time": training.start_time,
             "end_time": training.end_time,
+            "can_cancel": _can_user_cancel_training(training, reference_time=now),
         }
         for training in reserved_trainings_qs
     ]
@@ -603,6 +624,12 @@ def _handle_reservation_post(request):
             return JsonResponse({
                 "ok": False,
                 "error": "You are not registered for this session.",
+            }, status=400)
+
+        if not _can_user_cancel_training(training):
+            return JsonResponse({
+                "ok": False,
+                "error": "Cancellations are only allowed up to 15 minutes before the training start time.",
             }, status=400)
 
         training.participants.remove(user)

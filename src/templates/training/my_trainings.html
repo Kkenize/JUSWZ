@@ -46,12 +46,21 @@
             </div>
           </div>
           <div class="reserved-session-actions">
+            {% if training.can_cancel %}
             <button type="button"
                     class="btn btn-outline-danger btn-sm js-cancel-reservation"
                     data-training-id="{{ training.id }}"
                     data-training-title="{{ training.title }}">
               Delete
             </button>
+            {% else %}
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    disabled
+                    title="Cancellations close 15 minutes before the training starts.">
+              Locked
+            </button>
+            {% endif %}
           </div>
         </li>
         {% endfor %}
