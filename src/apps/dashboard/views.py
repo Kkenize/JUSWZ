@@ -676,6 +676,7 @@ def _handle_reservation_post(request):
         }, status=400)
 
     training.participants.add(user)
+    create_google_calendar_event(user, training, save_event_id=False)
 
     updated_completed = sorted(_get_completed_level_one_categories(user))
     response = {
