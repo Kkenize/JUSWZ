@@ -17,7 +17,8 @@
         <div class="col-md-6 col-lg-4">
             <div class="dashboard-card h-100 p-4">
                 <h3 class="h5 fw-bold mb-3">My Trainings</h3>
-                <p class="text-muted mb-4">2 Upcoming training sessions</p>
+                <!-- Updated to show actual dynamic reserved trainings count -->
+                <p class="text-muted mb-4">{{ reserved_trainings_count }} Trainings reserved</p>
                 <a href="{% url 'dashboard:my_trainings' %}" class="btn btn-bc-gold">View Trainings</a>
             </div>
         </div>
@@ -45,7 +46,7 @@
             <div class="dashboard-card h-100 p-4">
                 <h3 class="h5 fw-bold mb-3">My Reservations</h3>
                 <p class="text-muted mb-4">1 Upcoming reservation</p>
-                <a href="#" class="btn btn-bc-gold">Manage Bookings</a>
+                <a href="{% url 'dashboard:my_reserved_trainings' %}" class="btn btn-bc-gold">Manage Bookings</a>
             </div>
         </div>
 

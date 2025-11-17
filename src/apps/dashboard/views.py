@@ -45,7 +45,8 @@ def student_dashboard(request):
     """Student-only dashboard"""
     user_profile = request.user.userprofile
     return render(request, 'dashboard/student_dashboard.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "reserved_trainings_count": request.user.enrolled_trainings.filter(date__gte=timezone.localdate()).count(),
     })
 
 
@@ -518,6 +519,36 @@ def my_trainings(request):
         "user_profile": user_profile,
         "trainings": trainings,
         "level_unlocks": _build_level_unlock_map(request.user),
+        "reserved_trainings": reserved_trainings,
+    })
+
+@never_cache
+@login_required
+def my_reserved_trainings(request):
+    """Student view: allows students to view reserved training sessions."""
+    user_profile = request.user.userprofile
+
+    # Only students should access this view
+    if user_profile.role != 'student':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    today = timezone.localdate()
+    now = timezone.now()
+    reserved_trainings_qs = request.user.enrolled_trainings.filter(date__gte=today).order_by('date', 'start_time')
+    reserved_trainings = [
+        {
+            "id": training.id,
+            "title": training.title,
+            "date": training.date,
+            "start_time": training.start_time,
+            "end_time": training.end_time,
+            "can_cancel": _can_user_cancel_training(training, reference_time=now),
+        }
+        for training in reserved_trainings_qs
+    ]
+
+    return render(request, "training/my_reserved_trainings.html", {
+        "user_profile": user_profile,
         "reserved_trainings": reserved_trainings,
     })
 
