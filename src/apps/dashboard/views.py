@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.db.models import Count
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training, create_google_calendar_event
+from .models import Training, create_google_calendar_event, remove_google_calendar_event
 from .forms import TrainingSessionForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
@@ -574,7 +574,7 @@ def training_reserve(request):
             for t in Training.objects
                 .filter(id__in=reserved_sessions, title=selected_training_title)
                 .order_by('-date', '-start_time')
-        ]
+        ]    
 
     return render(request, "training/training_reserve.html", {
         "user_profile": user_profile,
@@ -631,7 +631,9 @@ def _handle_reservation_post(request):
                 "ok": False,
                 "error": "Cancellations are only allowed up to 15 minutes before the training start time.",
             }, status=400)
-
+        
+        # delete Google Calendar event if exists
+        remove_google_calendar_event(user, training)
         training.participants.remove(user)
 
         reserved_ids = list(
@@ -676,7 +678,7 @@ def _handle_reservation_post(request):
         }, status=400)
 
     training.participants.add(user)
-    create_google_calendar_event(user, training, save_event_id=False)
+    create_google_calendar_event(user, training, save_event_id=True)
 
     updated_completed = sorted(_get_completed_level_one_categories(user))
     response = {

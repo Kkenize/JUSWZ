@@ -21,6 +21,7 @@ class Training(models.Model):
     instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='training_sessions')
     participants = models.ManyToManyField(User, related_name='enrolled_trainings', blank=True)
     google_event_id = models.CharField(max_length=256, blank=True, null=True)
+    google_calendar_id = models.CharField(max_length=256, blank=True, null=True)
 
     @property
     def is_full(self):
@@ -59,8 +60,9 @@ def create_google_calendar_event(user, training, *, save_event_id=True):
             "start": {"dateTime": start_dt, "timeZone": "America/New_York"},
             "end": {"dateTime": end_dt, "timeZone": "America/New_York"},
         }
+        training.google_calendar_id = 'primary'
+        created_event = service.events().insert(calendarId=training.google_calendar_id, body=event).execute()
 
-        created_event = service.events().insert(calendarId="primary", body=event).execute()
     except HttpError as exc:
         logger.warning("Google Calendar API error for %s: %s", user, exc)
         return None
@@ -70,7 +72,51 @@ def create_google_calendar_event(user, training, *, save_event_id=True):
 
     if save_event_id and created_event and created_event.get('id'):
         training.google_event_id = created_event['id']
-        training.save(update_fields=['google_event_id'])
+        training.save(update_fields=['google_event_id', 'google_calendar_id'])
 
     logger.info("Synced training %s to Google Calendar for %s", training.id, user)
     return created_event
+
+
+def remove_google_calendar_event(user, training):
+    """Remove the training session from the user's Google Calendar."""
+    
+    try:
+        social_account = SocialAccount.objects.get(user=user, provider='google')
+        token = SocialToken.objects.get(account=social_account)
+    except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
+        logger.info("Skipping Google Calendar sync for %s; no OAuth token.", user)
+        return None
+    
+    try:
+        creds = Credentials(
+            token.token,
+            refresh_token=token.token_secret,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=None,
+            client_secret=None,
+        )
+
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+
+        service = build("calendar", "v3", credentials=creds)
+
+        if training.google_event_id:
+            try:
+                service.events().delete(calendarId=training.google_calendar_id,eventId=training.google_event_id).execute()
+
+            except HttpError as e:
+                if e.resp.status == 410:
+                    logger.info("Google event already deleted for %s.", user)
+                else:
+                    raise
+
+            # Always clear ID because the event is definitely gone now
+            training.google_event_id = None
+            training.save(update_fields=['google_event_id'])
+            logger.info("Synced deletion for %s.", user)
+
+    except Exception as exc:
+        logger.warning("Failed to sync Google Calendar for %s: %s", user, exc)
+        return None
