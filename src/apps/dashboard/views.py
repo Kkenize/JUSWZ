@@ -703,3 +703,12 @@ def _handle_reservation_post(request):
 @login_required
 def training_list_student(request):
     return render(request, 'training/training_list_student.html')
+
+@never_cache
+@login_required
+def help_support(request):
+    """Help & Support page"""
+    user_profile = request.user.userprofile
+    return render(request, 'dashboard/help_support.html', {
+        "user_profile": user_profile
+    })

@@ -1,0 +1,25 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Help & Support - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="mb-4">
+        <h1 class="display-4 fw-bold">Welcome, Student!</h1>
+        <p class="lead text-muted">Need some help?.</p>
+    </div>
+
+    <!-- Help & Support Content -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Help & Support</h3>
+                <p class="text-muted mb-4">If you need assistance, please contact our support team or stop by to speak with a Hatchery Team Member.</p>
+                <a href="mailto:the-hatchery-info-ggroup@bc.edu" class="btn btn-bc-gold">Contact Support</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
