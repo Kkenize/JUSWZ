@@ -1,0 +1,333 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Shifts - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">My Shifts</h1>
+      <p class="text-muted mb-0">View your upcoming training sessions and all trainers' schedules.</p>
+    </div>
+    <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">
+      ← Back to Staff Dashboard
+    </a>
+  </div>
+
+  <!-- My Upcoming Shifts Section -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h2 class="h5 fw-bold mb-3">My Upcoming Shifts</h2>
+      {% if my_shifts %}
+        <div class="table-responsive">
+          <table class="table table-borderless align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Date</th>
+                <th scope="col">Start</th>
+                <th scope="col">End</th>
+                <th scope="col">Capacity</th>
+                <th scope="col">Participants</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for shift in my_shifts %}
+                <tr class="shift-row">
+                  <td class="fw-semibold">{{ shift.title }}</td>
+                  <td>{{ shift.date|date:"M j, Y" }}</td>
+                  <td>{{ shift.start_time|time:"P" }}</td>
+                  <td>{{ shift.end_time|time:"P" }}</td>
+                  <td>{{ shift.capacity }}</td>
+                  <td>{{ shift.participants_count }} / {{ shift.capacity }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">You have no upcoming shifts scheduled.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Toggle Section -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <!-- Filter and View Toggle Controls -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div class="d-flex gap-2">
+          <div class="btn-group" role="group" aria-label="Filter shifts">
+            <input type="radio" class="btn-check" name="filterMode" id="filterMyShifts" value="my_shifts" 
+                   {% if filter_mode == 'my_shifts' %}checked{% endif %}>
+            <label class="btn btn-outline-primary" for="filterMyShifts">My Shifts</label>
+            
+            <input type="radio" class="btn-check" name="filterMode" id="filterAllTrainers" value="all_trainers"
+                   {% if filter_mode == 'all_trainers' %}checked{% endif %}>
+            <label class="btn btn-outline-primary" for="filterAllTrainers">All Trainers' Shifts</label>
+          </div>
+        </div>
+        
+        <div class="d-flex gap-2">
+          <div class="btn-group" role="group" aria-label="View mode">
+            <input type="radio" class="btn-check" name="viewMode" id="viewList" value="list"
+                   {% if view_mode == 'list' %}checked{% endif %}>
+            <label class="btn btn-outline-secondary" for="viewList">List</label>
+            
+            <input type="radio" class="btn-check" name="viewMode" id="viewCalendar" value="calendar"
+                   {% if view_mode == 'calendar' %}checked{% endif %}>
+            <label class="btn btn-outline-secondary" for="viewCalendar">Calendar</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div id="listView" class="view-container" style="display: {% if view_mode == 'list' %}block{% else %}none{% endif %};">
+        {% if filter_mode == 'my_shifts' %}
+          {% if my_shifts %}
+            <div class="table-responsive">
+              <table class="table table-borderless align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Start</th>
+                    <th scope="col">End</th>
+                    <th scope="col">Capacity</th>
+                    <th scope="col">Participants</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for shift in my_shifts %}
+                    <tr class="shift-row">
+                      <td class="fw-semibold">{{ shift.title }}</td>
+                      <td>{{ shift.date|date:"M j, Y" }}</td>
+                      <td>{{ shift.start_time|time:"P" }}</td>
+                      <td>{{ shift.end_time|time:"P" }}</td>
+                      <td>{{ shift.capacity }}</td>
+                      <td>{{ shift.participants_count }} / {{ shift.capacity }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center py-5">No shifts found.</p>
+          {% endif %}
+        {% else %}
+          {% if all_trainers_shifts %}
+            <div class="table-responsive">
+              <table class="table table-borderless align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Instructor</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Start</th>
+                    <th scope="col">End</th>
+                    <th scope="col">Capacity</th>
+                    <th scope="col">Participants</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for shift in all_trainers_shifts %}
+                    <tr class="shift-row {% if shift.is_my_shift %}table-warning{% endif %}">
+                      <td class="fw-semibold">{{ shift.title }}</td>
+                      <td>
+                        {{ shift.instructor }}
+                        {% if shift.is_my_shift %}
+                          <span class="badge bg-primary ms-2">You</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ shift.date|date:"M j, Y" }}</td>
+                      <td>{{ shift.start_time|time:"P" }}</td>
+                      <td>{{ shift.end_time|time:"P" }}</td>
+                      <td>{{ shift.capacity }}</td>
+                      <td>{{ shift.participants_count }} / {{ shift.capacity }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center py-5">No shifts found.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Calendar View -->
+      <div id="calendarView" class="view-container" style="display: {% if view_mode == 'calendar' %}block{% else %}none{% endif %};">
+        <div class="calendar-container shadow-sm rounded p-4" style="background-color:#f7f4ee;">
+          <div id="calendar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FullCalendar CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+{{ my_shifts_json|json_script:"my-shifts-data" }}
+{{ all_trainers_shifts_json|json_script:"all-trainers-shifts-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Get current filter and view mode from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  let currentFilter = urlParams.get('filter') || 'my_shifts';
+  let currentView = urlParams.get('view') || 'list';
+
+  // Filter mode toggle
+  const filterRadios = document.querySelectorAll('input[name="filterMode"]');
+  filterRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      currentFilter = this.value;
+      updateView();
+    });
+  });
+
+  // View mode toggle
+  const viewRadios = document.querySelectorAll('input[name="viewMode"]');
+  viewRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      currentView = this.value;
+      updateView();
+    });
+  });
+
+  function updateView() {
+    const listView = document.getElementById('listView');
+    const calendarView = document.getElementById('calendarView');
+    
+    if (currentView === 'list') {
+      // For list view, reload page to get fresh server-rendered data
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('filter', currentFilter);
+      newUrl.searchParams.set('view', currentView);
+      window.location.href = newUrl.toString();
+    } else {
+      // For calendar view, update dynamically
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('filter', currentFilter);
+      newUrl.searchParams.set('view', currentView);
+      window.history.pushState({}, '', newUrl);
+      
+      listView.style.display = 'none';
+      calendarView.style.display = 'block';
+      
+      // Initialize calendar if not already done
+      if (!window.calendarInitialized) {
+        initializeCalendar();
+        window.calendarInitialized = true;
+      } else {
+        // Update calendar events based on filter
+        updateCalendarEvents();
+      }
+    }
+  }
+
+  // Calendar data
+  const myShiftsDataElement = document.getElementById('my-shifts-data');
+  const allTrainersShiftsDataElement = document.getElementById('all-trainers-shifts-data');
+  const myShiftsData = myShiftsDataElement ? JSON.parse(myShiftsDataElement.textContent) : [];
+  const allTrainersShiftsData = allTrainersShiftsDataElement ? JSON.parse(allTrainersShiftsDataElement.textContent) : [];
+
+  function getCalendarEvents() {
+    const shifts = currentFilter === 'my_shifts' ? myShiftsData : allTrainersShiftsData;
+    return shifts.map(shift => ({
+      id: shift.id,
+      title: shift.title + (shift.instructor && !shift.is_my_shift ? ` (${shift.instructor})` : ''),
+      start: `${shift.date}T${shift.start_time}`,
+      end: `${shift.date}T${shift.end_time}`,
+      backgroundColor: shift.is_my_shift ? '#f6c851' : '#5b9bd5',
+      borderColor: shift.is_my_shift ? '#d9b03b' : '#4a7ba7',
+    }));
+  }
+
+  function initializeCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      height: 600,
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      events: getCalendarEvents(),
+      eventClick: function(info) {
+        // Optional: Add click handler for events
+        console.log('Event clicked:', info.event);
+      }
+    });
+
+    calendar.render();
+    window.calendarInstance = calendar;
+  }
+
+  function updateCalendarEvents() {
+    if (window.calendarInstance) {
+      window.calendarInstance.removeAllEvents();
+      window.calendarInstance.addEventSource(getCalendarEvents());
+    }
+  }
+
+  // Initialize calendar if view mode is calendar
+  if (currentView === 'calendar') {
+    initializeCalendar();
+    window.calendarInitialized = true;
+  }
+});
+</script>
+
+<style>
+  .shift-row {
+    border-bottom: 1px solid #f0ebe0;
+  }
+
+  .shift-row:last-child {
+    border-bottom: none;
+  }
+
+  .shift-row:hover {
+    background-color: #fffdf6;
+  }
+
+  .shift-row td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .view-container {
+    min-height: 300px;
+  }
+
+  .calendar-container {
+    background-color: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+
+  #calendar {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+  }
+
+  .btn-check:checked + .btn-outline-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+  }
+</style>
+{% endblock %}
+

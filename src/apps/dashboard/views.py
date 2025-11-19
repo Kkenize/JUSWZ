@@ -712,3 +712,101 @@ def help_support(request):
     return render(request, 'dashboard/help_support.html', {
         "user_profile": user_profile
     })
+
+@never_cache
+@login_required
+def my_shifts(request):
+    """Staff view: shows staff member's upcoming shifts and all trainers' shifts."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    today = timezone.localdate()
+    now = timezone.now()
+    
+    # Get staff member's own upcoming shifts
+    my_shifts_qs = Training.objects.filter(
+        instructor=request.user,
+        date__gte=today
+    ).order_by('date', 'start_time')
+    
+    my_shifts_list = [
+        {
+            "id": training.id,
+            "title": training.title,
+            "date": training.date,
+            "start_time": training.start_time,
+            "end_time": training.end_time,
+            "capacity": training.capacity,
+            "participants_count": training.participants.count(),
+            "instructor": training.instructor.get_full_name() or training.instructor.username,
+        }
+        for training in my_shifts_qs
+    ]
+    
+    # Get all trainers' upcoming shifts
+    all_trainers_shifts_qs = Training.objects.filter(
+        date__gte=today
+    ).select_related('instructor').prefetch_related('participants').order_by('date', 'start_time')
+    
+    all_trainers_shifts_list = [
+        {
+            "id": training.id,
+            "title": training.title,
+            "date": training.date,
+            "start_time": training.start_time,
+            "end_time": training.end_time,
+            "capacity": training.capacity,
+            "participants_count": training.participants.count(),
+            "instructor": training.instructor.get_full_name() or training.instructor.username,
+            "is_my_shift": training.instructor == request.user,
+        }
+        for training in all_trainers_shifts_qs
+    ]
+    
+    # Get view mode from query params (list or calendar)
+    view_mode = request.GET.get('view', 'list')
+    
+    # Get filter mode from query params (my_shifts or all_trainers)
+    filter_mode = request.GET.get('filter', 'my_shifts')
+    
+    # Serialize for JavaScript calendar
+    import json
+    my_shifts_json = json.dumps([
+        {
+            "id": shift["id"],
+            "title": shift["title"],
+            "date": shift["date"].isoformat() if hasattr(shift["date"], 'isoformat') else str(shift["date"]),
+            "start_time": shift["start_time"].strftime("%H:%M:%S") if hasattr(shift["start_time"], 'strftime') else str(shift["start_time"]),
+            "end_time": shift["end_time"].strftime("%H:%M:%S") if hasattr(shift["end_time"], 'strftime') else str(shift["end_time"]),
+            "capacity": shift["capacity"],
+            "participants_count": shift["participants_count"],
+            "instructor": shift["instructor"],
+        }
+        for shift in my_shifts_list
+    ])
+    
+    all_trainers_shifts_json = json.dumps([
+        {
+            "id": shift["id"],
+            "title": shift["title"],
+            "date": shift["date"].isoformat() if hasattr(shift["date"], 'isoformat') else str(shift["date"]),
+            "start_time": shift["start_time"].strftime("%H:%M:%S") if hasattr(shift["start_time"], 'strftime') else str(shift["start_time"]),
+            "end_time": shift["end_time"].strftime("%H:%M:%S") if hasattr(shift["end_time"], 'strftime') else str(shift["end_time"]),
+            "capacity": shift["capacity"],
+            "participants_count": shift["participants_count"],
+            "instructor": shift["instructor"],
+            "is_my_shift": shift.get("is_my_shift", False),
+        }
+        for shift in all_trainers_shifts_list
+    ])
+    
+    return render(request, "dashboard/my_shifts.html", {
+        "user_profile": user_profile,
+        "my_shifts": my_shifts_list,
+        "all_trainers_shifts": all_trainers_shifts_list,
+        "view_mode": view_mode,
+        "filter_mode": filter_mode,
+        "my_shifts_json": my_shifts_json,
+        "all_trainers_shifts_json": all_trainers_shifts_json,
+    })

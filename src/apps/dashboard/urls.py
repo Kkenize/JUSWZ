@@ -36,4 +36,7 @@ urlpatterns = [
 
     # Help & Support
     path('help/', views.help_support, name='help'),
+    
+    # My Shifts (staff)
+    path('my-shifts/', views.my_shifts, name='my_shifts'),
 ]
