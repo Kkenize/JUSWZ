@@ -259,7 +259,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function updateCalendarEvents() {
     if (window.calendarInstance) {
-      window.calendarInstance.removeAllEvents();
+      // Remove all existing event sources to prevent duplicates
+      const eventSources = window.calendarInstance.getEventSources();
+      eventSources.forEach(source => source.remove());
+      
+      // Add the new event source with updated filter
       window.calendarInstance.addEventSource({
         url: getEventsUrl(),
         method: 'GET'
