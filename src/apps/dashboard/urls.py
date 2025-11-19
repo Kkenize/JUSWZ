@@ -33,6 +33,8 @@ urlpatterns = [
     path('training-management/calendar/remove/', views.calendar_remove, name='calendar_remove'),
     # API for calendar events (minimal JSON list)
     path('training-management/calendar/events/', views.training_list_api, name='training_list_api'),
+    # API for My Shifts calendar events
+    path('my-shifts/events/', views.my_shifts_api, name='my_shifts_api'),
 
     # Help & Support
     path('help/', views.help_support, name='help'),

@@ -395,6 +395,53 @@ def training_list_api(request):
         })
     return JsonResponse(data, safe=False)
 
+@login_required
+def my_shifts_api(request):
+    """Return JSON list of shifts for the My Shifts calendar frontend."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    today = timezone.localdate()
+    filter_mode = request.GET.get('filter', 'my_shifts')
+    
+    if filter_mode == 'my_shifts':
+        trainings = Training.objects.filter(
+            instructor=request.user,
+            date__gte=today
+        ).order_by('date', 'start_time')
+    else:
+        trainings = Training.objects.filter(
+            date__gte=today
+        ).select_related('instructor').order_by('date', 'start_time')
+    
+    data = []
+    for t in trainings:
+        event_data = {
+            'id': t.id,
+            'title': t.title,
+            'start': f"{t.date.isoformat()}T{t.start_time.strftime('%H:%M:%S')}",
+            'end': f"{t.date.isoformat()}T{t.end_time.strftime('%H:%M:%S')}",
+        }
+        # Add instructor name for all trainers view
+        if filter_mode == 'all_trainers':
+            instructor_name = t.instructor.get_full_name() or t.instructor.username
+            event_data['title'] = f"{t.title} ({instructor_name})"
+            # Highlight user's own shifts
+            if t.instructor == request.user:
+                event_data['backgroundColor'] = '#f6c851'
+                event_data['borderColor'] = '#d9b03b'
+            else:
+                event_data['backgroundColor'] = '#5b9bd5'
+                event_data['borderColor'] = '#4a7ba7'
+        else:
+            event_data['backgroundColor'] = '#f6c851'
+            event_data['borderColor'] = '#d9b03b'
+        
+        data.append(event_data)
+    
+    return JsonResponse(data, safe=False)
+
 
 def _get_completed_levels_by_category(user):
     """Return a mapping of category -> set(levels completed) for the user."""

@@ -170,9 +170,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
-{{ my_shifts_json|json_script:"my-shifts-data" }}
-{{ all_trainers_shifts_json|json_script:"all-trainers-shifts-data" }}
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Get current filter and view mode from URL params
@@ -229,22 +226,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Calendar data
-  const myShiftsDataElement = document.getElementById('my-shifts-data');
-  const allTrainersShiftsDataElement = document.getElementById('all-trainers-shifts-data');
-  const myShiftsData = myShiftsDataElement ? JSON.parse(myShiftsDataElement.textContent) : [];
-  const allTrainersShiftsData = allTrainersShiftsDataElement ? JSON.parse(allTrainersShiftsDataElement.textContent) : [];
-
-  function getCalendarEvents() {
-    const shifts = currentFilter === 'my_shifts' ? myShiftsData : allTrainersShiftsData;
-    return shifts.map(shift => ({
-      id: shift.id,
-      title: shift.title + (shift.instructor && !shift.is_my_shift ? ` (${shift.instructor})` : ''),
-      start: `${shift.date}T${shift.start_time}`,
-      end: `${shift.date}T${shift.end_time}`,
-      backgroundColor: shift.is_my_shift ? '#f6c851' : '#5b9bd5',
-      borderColor: shift.is_my_shift ? '#d9b03b' : '#4a7ba7',
-    }));
+  function getEventsUrl() {
+    const baseUrl = "{% url 'dashboard:my_shifts_api' %}";
+    return `${baseUrl}?filter=${currentFilter}`;
   }
 
   function initializeCalendar() {
@@ -259,7 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
-      events: getCalendarEvents(),
+      eventSources: [{
+        url: getEventsUrl(),
+        method: 'GET'
+      }],
       eventClick: function(info) {
         // Optional: Add click handler for events
         console.log('Event clicked:', info.event);
@@ -273,7 +260,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateCalendarEvents() {
     if (window.calendarInstance) {
       window.calendarInstance.removeAllEvents();
-      window.calendarInstance.addEventSource(getCalendarEvents());
+      window.calendarInstance.addEventSource({
+        url: getEventsUrl(),
+        method: 'GET'
+      });
     }
   }
 
@@ -286,6 +276,12 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+  :root {
+    --bc-gold: #f6c851;
+    --bc-gold-hover: #f9d880;
+    --bc-gold-active: #d9b03b;
+  }
+
   .shift-row {
     border-bottom: 1px solid #f0ebe0;
   }
@@ -307,16 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
     min-height: 300px;
   }
 
-  .calendar-container {
-    background-color: #fff;
-    border-radius: 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  }
-
-  #calendar {
-    font-family: 'Inter', sans-serif;
-  }
-
   .btn-check:checked + .btn-outline-primary {
     background-color: #0d6efd;
     border-color: #0d6efd;
@@ -327,6 +313,94 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #6c757d;
     border-color: #6c757d;
     color: #fff;
+  }
+
+  /* ---- CALENDAR STYLING (matching training management) ---- */
+  .calendar-container {
+    background-color: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 25px;
+  }
+
+  #calendar {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Toolbar */
+  .fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: 600;
+    color: #222;
+  }
+
+  /* Day cells */
+  .fc-daygrid-day {
+    background-color: #fff !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* Today highlight */
+  .fc-day-today {
+    background-color: #fff9e9 !important;
+    border: 1px solid #f2d56f !important;
+  }
+
+  /* Event blocks */
+  .fc-event {
+    background-color: var(--bc-gold) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 2px 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease;
+  }
+
+  .fc-event:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .fc-event:active {
+    transform: scale(0.97);
+  }
+
+  /* Day headers */
+  .fc-col-header-cell-cushion {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+
+  .fc-daygrid-day-number {
+    color: #555;
+    font-weight: 500;
+  }
+
+  /* Calendar buttons */
+  .fc-button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-transform: capitalize !important;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .fc-button-primary {
+    background-color: var(--bc-gold) !important;
+    border: none !important;
+    color: #fff !important;
+  }
+
+  .fc-button-primary:hover {
+    background-color: var(--bc-gold-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .fc-button-primary:active {
+    background-color: var(--bc-gold-active) !important;
+    transform: scale(0.96);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 </style>
 {% endblock %}
