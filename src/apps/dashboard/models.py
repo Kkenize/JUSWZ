@@ -1,8 +1,9 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from allauth.socialaccount.models import SocialAccount, SocialToken
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -198,12 +199,16 @@ def create_google_calendar_event(user, training, *, save_event_id=True):
         return None
 
     try:
+        # Get OAuth client credentials from settings
+        client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+        client_secret = getattr(settings, 'GOOGLE_OAUTH_CLIENT_SECRET', None)
+        
         creds = Credentials(
             token.token,
             refresh_token=token.token_secret,
             token_uri="https://oauth2.googleapis.com/token",
-            client_id=None,
-            client_secret=None,
+            client_id=client_id,
+            client_secret=client_secret,
         )
 
         if creds.expired and creds.refresh_token:
@@ -230,9 +235,12 @@ def create_google_calendar_event(user, training, *, save_event_id=True):
         logger.warning("Failed to sync Google Calendar for %s: %s", user, exc)
         return None
 
+    # Only save event ID if this user is the instructor (to avoid overwriting with participant event IDs)
     if save_event_id and created_event and created_event.get('id'):
-        training.google_event_id = created_event['id']
-        training.save(update_fields=['google_event_id', 'google_calendar_id'])
+        # Only save event ID for instructors, not participants
+        if training.instructor == user:
+            training.google_event_id = created_event['id']
+            training.save(update_fields=['google_event_id', 'google_calendar_id'])
 
     logger.info("Synced training %s to Google Calendar for %s", training.id, user)
     return created_event
@@ -249,12 +257,16 @@ def remove_google_calendar_event(user, training):
         return None
     
     try:
+        # Get OAuth client credentials from settings
+        client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+        client_secret = getattr(settings, 'GOOGLE_OAUTH_CLIENT_SECRET', None)
+        
         creds = Credentials(
             token.token,
             refresh_token=token.token_secret,
             token_uri="https://oauth2.googleapis.com/token",
-            client_id=None,
-            client_secret=None,
+            client_id=client_id,
+            client_secret=client_secret,
         )
 
         if creds.expired and creds.refresh_token:
@@ -262,20 +274,98 @@ def remove_google_calendar_event(user, training):
 
         service = build("calendar", "v3", credentials=creds)
 
+        # Try to delete using stored event ID if available
+        # Note: We don't check if user is the instructor because after swaps, the instructor may have changed
+        deleted = False
         if training.google_event_id:
             try:
-                service.events().delete(calendarId=training.google_calendar_id,eventId=training.google_event_id).execute()
-
+                service.events().delete(
+                    calendarId=training.google_calendar_id or 'primary',
+                    eventId=training.google_event_id
+                ).execute()
+                deleted = True
+                logger.info("Deleted Google Calendar event %s for %s", training.google_event_id, user)
             except HttpError as e:
                 if e.resp.status == 410:
                     logger.info("Google event already deleted for %s.", user)
+                    deleted = True
+                elif e.resp.status == 404:
+                    logger.info("Google event not found (may have been deleted manually or wrong calendar) for %s. Will try search.", user)
+                    # Don't mark as deleted, try search instead
                 else:
-                    raise
-
-            # Always clear ID because the event is definitely gone now
+                    logger.warning("Failed to delete event by ID for %s: %s. Will try search.", user, e)
+        
+        # If deletion by ID failed or ID not available, try to find and delete by title/date
+        if not deleted:
+            try:
+                # Search for events matching the training title and date
+                start_dt = datetime.combine(training.date, training.start_time)
+                end_dt = datetime.combine(training.date, training.end_time)
+                
+                # Search in a wider window around the event time
+                time_min = (start_dt - timedelta(hours=2)).isoformat() + 'Z'
+                time_max = (end_dt + timedelta(hours=2)).isoformat() + 'Z'
+                
+                # First try searching by title
+                events_result = service.events().list(
+                    calendarId='primary',
+                    timeMin=time_min,
+                    timeMax=time_max,
+                    q=training.title,
+                    singleEvents=True,
+                    orderBy='startTime'
+                ).execute()
+                
+                events = events_result.get('items', [])
+                
+                # If no results with title search, try without query (broader search)
+                if not events:
+                    events_result = service.events().list(
+                        calendarId='primary',
+                        timeMin=time_min,
+                        timeMax=time_max,
+                        singleEvents=True,
+                        orderBy='startTime'
+                    ).execute()
+                    events = events_result.get('items', [])
+                
+                for event in events:
+                    # Check if this event matches our training by time
+                    event_start = event['start'].get('dateTime', event['start'].get('date'))
+                    if event_start:
+                        # Parse the datetime - handle timezone-aware and naive datetimes
+                        try:
+                            if 'T' in event_start:
+                                # Remove timezone info for comparison
+                                event_dt_str = event_start.split('+')[0].split('-')[0:3]
+                                if len(event_dt_str) >= 2:
+                                    event_dt_str = '-'.join(event_dt_str[:3]) + 'T' + event_start.split('T')[1].split('+')[0].split('-')[0]
+                                event_dt = datetime.fromisoformat(event_dt_str.replace('Z', ''))
+                            else:
+                                event_dt = datetime.fromisoformat(event_start)
+                        except:
+                            continue
+                        
+                        # Check if time matches (within 30 minutes)
+                        time_diff = abs((event_dt - start_dt).total_seconds())
+                        if time_diff < 1800:  # Within 30 minutes
+                            service.events().delete(
+                                calendarId='primary',
+                                eventId=event['id']
+                            ).execute()
+                            logger.info("Deleted Google Calendar event by search for %s (event: %s)", user, event.get('summary', 'Unknown'))
+                            deleted = True
+                            break
+            except Exception as e:
+                logger.warning("Failed to search/delete event for %s: %s", user, e)
+        
+        # Clear stored event ID if we successfully deleted
+        # Note: We clear it regardless of current instructor because the event is gone from this user's calendar
+        if deleted and training.google_event_id:
+            # Only clear if this user was the original instructor (to avoid clearing for participants)
+            # But actually, we should clear it if we successfully deleted it
             training.google_event_id = None
             training.save(update_fields=['google_event_id'])
-            logger.info("Synced deletion for %s.", user)
 
     except Exception as exc:
         logger.warning("Failed to sync Google Calendar for %s: %s", user, exc)

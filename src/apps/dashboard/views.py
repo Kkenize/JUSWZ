@@ -4,6 +4,7 @@ from datetime import datetime, time as time_cls, timedelta
 from collections import defaultdict
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
@@ -827,7 +828,7 @@ def request_cover(request, training_id):
     
     if existing:
         messages.info(request, "You already have a pending cover request for this shift.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     if request.method == 'POST':
         form = ShiftRequestForm(request.POST, user=request.user, training=training)
@@ -838,7 +839,7 @@ def request_cover(request, training_id):
             shift_request.request_type = 'cover'
             shift_request.save()
             messages.success(request, "Cover request created successfully!")
-            return redirect('dashboard:requests?main_tab=shift_requests')
+            return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     else:
         form = ShiftRequestForm(user=request.user, training=training)
         form.fields['request_type'].initial = 'cover'
@@ -883,7 +884,7 @@ def request_swap(request, training_id):
                 shift_request.request_type = 'swap'
                 messages.success(request, "Swap request created successfully!")
             shift_request.save()
-            return redirect('dashboard:requests?main_tab=shift_requests')
+            return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     else:
         form = ShiftRequestForm(user=request.user, training=training)
         form.fields['request_type'].initial = 'swap'
@@ -926,6 +927,7 @@ def offer_cover(request, training_id):
         notes = request.POST.get('notes', '')
         
         try:
+            redirect_url = None
             with transaction.atomic():
                 if swap_with_training_id:
                     # Offer to swap
@@ -934,40 +936,40 @@ def offer_cover(request, training_id):
                     # Verify the swap training belongs to the user
                     if swap_with_training.instructor != request.user:
                         messages.error(request, "You can only offer to swap with your own shifts.")
-                        return redirect('dashboard:requests?main_tab=shift_requests')
-                    
-                    # Check if there's already a swap request
-                    swap_request = ShiftRequest.objects.select_for_update().filter(
-                        training=training,
-                        request_type='swap',
-                        swap_with_training=swap_with_training,
-                        status='pending'
-                    ).first()
-                    
-                    if not swap_request:
-                        # Create a new swap request
-                        swap_request = ShiftRequest.objects.create(
+                        redirect_url = reverse('dashboard:requests') + '?main_tab=shift_requests'
+                    else:
+                        # Check if there's already a swap request
+                        swap_request = ShiftRequest.objects.select_for_update().filter(
                             training=training,
-                            requested_by=training.instructor,
                             request_type='swap',
                             swap_with_training=swap_with_training,
-                            offered_by=request.user,
-                            status='pending',
-                            notes=notes or f"Swap offered by {request.user.get_full_name() or request.user.username}"
-                        )
-                    else:
-                        # Check if someone else already offered this swap
-                        if swap_request.offered_by and swap_request.offered_by != request.user:
-                            messages.warning(request, "Someone else has already offered this swap.")
-                            return redirect('dashboard:requests?main_tab=shift_requests')
+                            status='pending'
+                        ).first()
                         
-                        # Update offer
-                        swap_request.offered_by = request.user
-                        if notes:
-                            swap_request.notes = notes
-                        swap_request.save()
-                    
-                    messages.success(request, f"You've offered to swap {swap_with_training.title} with {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+                        if not swap_request:
+                            # Create a new swap request
+                            swap_request = ShiftRequest.objects.create(
+                                training=training,
+                                requested_by=training.instructor,
+                                request_type='swap',
+                                swap_with_training=swap_with_training,
+                                offered_by=request.user,
+                                status='pending',
+                                notes=notes or f"Swap offered by {request.user.get_full_name() or request.user.username}"
+                            )
+                            messages.success(request, f"You've offered to swap {swap_with_training.title} with {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+                        else:
+                            # Check if someone else already offered this swap
+                            if swap_request.offered_by and swap_request.offered_by != request.user:
+                                messages.warning(request, "Someone else has already offered this swap.")
+                                redirect_url = reverse('dashboard:requests') + '?main_tab=shift_requests'
+                            else:
+                                # Update offer
+                                swap_request.offered_by = request.user
+                                if notes:
+                                    swap_request.notes = notes
+                                swap_request.save()
+                                messages.success(request, f"You've offered to swap {swap_with_training.title} with {training.instructor.get_full_name() or training.instructor.username}'s shift!")
                 else:
                     # Offer to cover (no swap selected)
                     cover_request = ShiftRequest.objects.select_for_update().filter(
@@ -986,19 +988,23 @@ def offer_cover(request, training_id):
                             status='pending',
                             notes=notes or f"Offered by {request.user.get_full_name() or request.user.username}"
                         )
+                        messages.success(request, f"You've offered to cover {training.instructor.get_full_name() or training.instructor.username}'s shift!")
                     else:
                         # Check if someone else already offered
                         if cover_request.offered_by and cover_request.offered_by != request.user:
                             messages.warning(request, "Someone else has already offered to cover this shift.")
-                            return redirect('dashboard:requests?main_tab=shift_requests')
-                        
-                        # Offer on existing request
-                        cover_request.offered_by = request.user
-                        if notes:
-                            cover_request.notes = notes
-                        cover_request.save()
-                    
-                    messages.success(request, f"You've offered to cover {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+                            redirect_url = reverse('dashboard:requests') + '?main_tab=shift_requests'
+                        else:
+                            # Offer on existing request
+                            cover_request.offered_by = request.user
+                            if notes:
+                                cover_request.notes = notes
+                            cover_request.save()
+                            messages.success(request, f"You've offered to cover {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+            
+            # Redirect after transaction completes
+            if redirect_url:
+                return redirect(redirect_url)
         
         except Exception as e:
             messages.error(request, "An error occurred while making the offer. Please try again.")
@@ -1006,7 +1012,7 @@ def offer_cover(request, training_id):
             logger = logging.getLogger(__name__)
             logger.error(f"Error offering to cover/swap training {training_id}: {e}", exc_info=True)
         
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     # GET request - show form
     return render(request, 'dashboard/offer_cover.html', {
@@ -1030,15 +1036,43 @@ def requests_page(request):
     main_tab = request.GET.get('main_tab', 'shift_requests')
     
     # Shift Requests Data
+    # Incoming: Requests for your shifts (where you're the instructor)
+    # - Cover requests received: training.instructor == you, requested_by != you, offered_by == None
+    # - Cover offers received: training.instructor == you, requested_by == you, offered_by != None
     incoming_shift_requests_qs = ShiftRequest.objects.filter(
         training__instructor=request.user,
         status='pending'
     ).select_related('training', 'requested_by', 'offered_by').order_by('-created_at')
     
-    # Outgoing requests (user's own requests) - pending first, then by creation date
+    # Separate: Cover offers received (where you requested cover and someone offered)
+    incoming_cover_offers_qs = ShiftRequest.objects.filter(
+        training__instructor=request.user,
+        requested_by=request.user,
+        offered_by__isnull=False,
+        status='pending'
+    ).select_related('training', 'offered_by').order_by('-created_at')
+    
+    # Outgoing: Requests you made (where you're the requester)
+    # - Cover requests sent: requested_by == you
     outgoing_shift_requests_qs = ShiftRequest.objects.filter(
         requested_by=request.user
     ).select_related('training', 'offered_by').annotate(
+        status_priority=Case(
+            When(status='pending', then=0),
+            When(status='approved', then=1),
+            When(status='rejected', then=2),
+            When(status='cancelled', then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('status_priority', '-created_at')
+    
+    # Cover offers you sent (where you're the offerer)
+    # - Cover offers sent: offered_by == you
+    # Combine with outgoing requests for "Sent Requests" tab
+    outgoing_cover_offers_qs = ShiftRequest.objects.filter(
+        offered_by=request.user
+    ).select_related('training', 'requested_by').annotate(
         status_priority=Case(
             When(status='pending', then=0),
             When(status='approved', then=1),
@@ -1068,24 +1102,51 @@ def requests_page(request):
     # Paginate querysets
     from django.core.paginator import Paginator
     
-    incoming_shift_requests_paginator = Paginator(incoming_shift_requests_qs, 5)
+    # Limit to first 100 items for search functionality
+    incoming_shift_requests_list = list(incoming_shift_requests_qs[:100])
+    incoming_shift_requests_paginator = Paginator(incoming_shift_requests_list, 5)
     incoming_shift_requests_page = request.GET.get('incoming_shift_page', 1)
     incoming_shift_requests = incoming_shift_requests_paginator.get_page(incoming_shift_requests_page)
     
-    outgoing_shift_requests_paginator = Paginator(outgoing_shift_requests_qs, 5)
+    # Combine requests you made and offers you made for "Sent Requests" tab
+    from django.db.models import Q
+    from itertools import chain
+    
+    # Limit to first 100 items for search functionality
+    outgoing_shift_requests_list = list(outgoing_shift_requests_qs[:100])
+    outgoing_cover_offers_list = list(outgoing_cover_offers_qs[:100])
+    
+    # Combine and sort by status priority and created_at
+    combined_sent = sorted(
+        chain(outgoing_shift_requests_list, outgoing_cover_offers_list),
+        key=lambda x: (getattr(x, 'status_priority', 999), -(x.created_at.timestamp() if hasattr(x.created_at, 'timestamp') else 0))
+    )[:100]
+    
+    outgoing_shift_requests_paginator = Paginator(combined_sent, 5)
     outgoing_shift_requests_page = request.GET.get('outgoing_shift_page', 1)
     outgoing_shift_requests = outgoing_shift_requests_paginator.get_page(outgoing_shift_requests_page)
     
-    outgoing_time_off_paginator = Paginator(outgoing_time_off_qs, 5)
+    # Keep separate for other uses if needed
+    outgoing_cover_offers_paginator = Paginator(outgoing_cover_offers_list, 5)
+    outgoing_cover_offers_page = request.GET.get('outgoing_offers_page', 1)
+    outgoing_cover_offers = outgoing_cover_offers_paginator.get_page(outgoing_cover_offers_page)
+    
+    # Limit to first 100 items for search functionality
+    outgoing_time_off_list = list(outgoing_time_off_qs[:100])
+    outgoing_time_off_paginator = Paginator(outgoing_time_off_list, 5)
     outgoing_time_off_page = request.GET.get('outgoing_time_off_page', 1)
     outgoing_time_off = outgoing_time_off_paginator.get_page(outgoing_time_off_page)
     
     # Pagination for Send Request section
-    my_available_shifts_paginator = Paginator(my_available_shifts_qs, 5)
+    # Limit to first 100 items for search functionality
+    my_available_shifts_list = list(my_available_shifts_qs[:100])
+    my_available_shifts_paginator = Paginator(my_available_shifts_list, 5)
     my_available_shifts_page = request.GET.get('my_shifts_page', 1)
     my_available_shifts = my_available_shifts_paginator.get_page(my_available_shifts_page)
     
-    other_trainers_shifts_paginator = Paginator(other_trainers_shifts_qs, 5)
+    # Limit to first 100 items for search functionality
+    other_trainers_shifts_list = list(other_trainers_shifts_qs[:100])
+    other_trainers_shifts_paginator = Paginator(other_trainers_shifts_list, 5)
     other_trainers_shifts_page = request.GET.get('other_shifts_page', 1)
     other_trainers_shifts = other_trainers_shifts_paginator.get_page(other_trainers_shifts_page)
     
@@ -1105,7 +1166,7 @@ def requests_page(request):
             time_off.user = request.user
             time_off.save()
             messages.success(request, "Time-off request submitted successfully!")
-            return redirect('dashboard:requests?main_tab=time_off_requests&time_off_tab=sent')
+            return redirect(reverse('dashboard:requests') + '?main_tab=time_off_requests&time_off_tab=sent')
     elif main_tab == 'time_off_requests' and time_off_sub_tab == 'send':
         form = TimeOffRequestForm()
     
@@ -1113,6 +1174,7 @@ def requests_page(request):
         'user_profile': user_profile,
         'incoming_shift_requests': incoming_shift_requests,
         'outgoing_shift_requests': outgoing_shift_requests,
+        'outgoing_cover_offers': outgoing_cover_offers,
         'outgoing_time_off': outgoing_time_off,
         'my_available_shifts': my_available_shifts,
         'other_trainers_shifts': other_trainers_shifts,
@@ -1137,15 +1199,15 @@ def approve_shift_request(request, request_id):
     # Check if user can approve (must be the instructor of the shift)
     if shift_request.training.instructor != request.user:
         messages.error(request, "You can only approve requests for your own shifts.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     if shift_request.status != 'pending':
         messages.error(request, "This request has already been processed.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     if shift_request.request_type == 'cover' and not shift_request.offered_by:
         messages.error(request, "Cannot approve cover request without an offer.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     # Use transaction to ensure atomicity
     try:
@@ -1157,6 +1219,43 @@ def approve_shift_request(request, request_id):
         instructor1 = None
         instructor2 = None
         
+        # Store original instructors BEFORE swapping (for calendar sync)
+        if shift_request.request_type == 'cover':
+            old_instructor = shift_request.training.instructor
+            new_instructor = shift_request.offered_by
+            
+        elif shift_request.request_type == 'swap':
+            if not shift_request.swap_with_training:
+                raise ValidationError("Cannot approve swap request: no swap training specified.")
+            
+            training1 = shift_request.training
+            training2 = shift_request.swap_with_training
+            
+            if not training2:
+                raise ValidationError("Cannot approve: swap training no longer exists.")
+            
+            if not shift_request.offered_by:
+                raise ValidationError("Cannot approve swap request: no offer has been made.")
+            
+            if training2.instructor != shift_request.offered_by:
+                raise ValidationError("Invalid swap request: the swap training must belong to the person who offered.")
+            
+            # Verify training1 still belongs to the approver
+            if training1.instructor != request.user:
+                raise ValidationError("Cannot approve: you are no longer the instructor of this shift.")
+            
+            # Store original instructors BEFORE swapping
+            instructor1 = training1.instructor
+            instructor2 = training2.instructor
+        
+        # Delete old calendar events BEFORE swapping (so we have correct instructor info)
+        if shift_request.request_type == 'cover' and old_instructor and new_instructor:
+            remove_google_calendar_event(old_instructor, shift_request.training)
+            
+        elif shift_request.request_type == 'swap' and training1 and training2 and instructor1 and instructor2:
+            remove_google_calendar_event(instructor1, training1)
+            remove_google_calendar_event(instructor2, training2)
+        
         with transaction.atomic():
             # Approve the request
             shift_request.status = 'approved'
@@ -1166,10 +1265,6 @@ def approve_shift_request(request, request_id):
             
             # Transfer the shift
             if shift_request.request_type == 'cover':
-                # Cover request: transfer shift to the person who offered
-                old_instructor = shift_request.training.instructor
-                new_instructor = shift_request.offered_by
-                
                 # Verify new_instructor is still valid
                 if not new_instructor:
                     raise ValidationError("Cannot approve: offer has been withdrawn.")
@@ -1177,40 +1272,19 @@ def approve_shift_request(request, request_id):
                 shift_request.training.instructor = new_instructor
                 shift_request.training.save()
                 
-            elif shift_request.request_type == 'swap' and shift_request.swap_with_training:
-                # Swap request: swap instructors between two shifts
-                training1 = shift_request.training
-                training2 = shift_request.swap_with_training
-                
-                # Verify that training2 still exists and belongs to the requester
-                if not training2:
-                    raise ValidationError("Cannot approve: swap training no longer exists.")
-                
-                if training2.instructor != shift_request.requested_by:
-                    raise ValidationError("Invalid swap request: the swap training must belong to the requester.")
-                
-                # Verify training1 still belongs to the approver
-                if training1.instructor != request.user:
-                    raise ValidationError("Cannot approve: you are no longer the instructor of this shift.")
-                
+            elif shift_request.request_type == 'swap':
                 # Swap the instructors
-                instructor1 = training1.instructor
-                instructor2 = training2.instructor
-                
                 training1.instructor = instructor2
                 training1.save()
                 training2.instructor = instructor1
                 training2.save()
         
-        # Sync calendars after successful database update (outside transaction)
+        # Create new calendar events AFTER swapping (outside transaction)
         # Calendar sync failures are logged but don't affect the database transaction
         if shift_request.request_type == 'cover' and old_instructor and new_instructor:
-            remove_google_calendar_event(old_instructor, shift_request.training)
             create_google_calendar_event(new_instructor, shift_request.training)
             
         elif shift_request.request_type == 'swap' and training1 and training2 and instructor1 and instructor2:
-            remove_google_calendar_event(instructor1, training1)
-            remove_google_calendar_event(instructor2, training2)
             create_google_calendar_event(instructor2, training1)
             create_google_calendar_event(instructor1, training2)
         
@@ -1225,7 +1299,7 @@ def approve_shift_request(request, request_id):
         logger = logging.getLogger(__name__)
         logger.error(f"Error approving shift request {request_id}: {e}", exc_info=True)
     
-    return redirect('dashboard:requests?main_tab=shift_requests')
+    return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
 
 
 @never_cache
@@ -1240,7 +1314,7 @@ def reject_shift_request(request, request_id):
     
     if shift_request.training.instructor != request.user:
         messages.error(request, "You can only reject requests for your own shifts.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     if request.method == 'POST':
         rejection_reason = request.POST.get('rejection_reason', '')
@@ -1250,7 +1324,7 @@ def reject_shift_request(request, request_id):
         shift_request.rejection_reason = rejection_reason
         shift_request.save()
         messages.success(request, "Request rejected.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     return render(request, 'dashboard/reject_request.html', {
         'shift_request': shift_request,
@@ -1270,23 +1344,23 @@ def cancel_shift_request(request, request_id):
     
     if shift_request.requested_by != request.user:
         messages.error(request, "You can only cancel your own requests.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     if shift_request.status != 'pending':
         messages.error(request, "Cannot cancel a request that has already been processed.")
-        return redirect('dashboard:requests?main_tab=shift_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
     
     shift_request.status = 'cancelled'
     shift_request.save()
     messages.success(request, "Request cancelled.")
-    return redirect('dashboard:requests?main_tab=shift_requests')
+    return redirect(reverse('dashboard:requests') + '?main_tab=shift_requests')
 
 
 @never_cache
 @login_required
 def request_time_off(request):
     """Request time off - redirects to requests page."""
-    return redirect('dashboard:requests?main_tab=time_off_requests&time_off_tab=send')
+    return redirect(reverse('dashboard:requests') + '?main_tab=time_off_requests&time_off_tab=send')
 
 
 @never_cache
@@ -1301,7 +1375,7 @@ def approve_time_off(request, request_id):
     
     if time_off.status != 'pending':
         messages.error(request, "This request has already been processed.")
-        return redirect('dashboard:requests?main_tab=time_off_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=time_off_requests')
     
     time_off.status = 'approved'
     time_off.approved_by = request.user
@@ -1309,7 +1383,7 @@ def approve_time_off(request, request_id):
     time_off.save()
     
     messages.success(request, "Time-off request approved.")
-    return redirect('dashboard:requests?main_tab=time_off_requests')
+    return redirect(reverse('dashboard:requests') + '?main_tab=time_off_requests')
 
 
 @never_cache
@@ -1330,7 +1404,7 @@ def reject_time_off(request, request_id):
         time_off.rejection_reason = rejection_reason
         time_off.save()
         messages.success(request, "Time-off request rejected.")
-        return redirect('dashboard:requests?main_tab=time_off_requests')
+        return redirect(reverse('dashboard:requests') + '?main_tab=time_off_requests')
     
     return render(request, 'dashboard/reject_time_off.html', {
         'time_off': time_off,
