@@ -76,7 +76,7 @@ class AvailabilityForm(forms.ModelForm):
             'day_of_week': forms.Select(attrs={'class': 'form-select'}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'is_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_available': forms.CheckboxInput(attrs={'class': 'form-check-input form-check-input-lg', 'role': 'switch'}),
         }
     
     def clean(self):

@@ -1039,9 +1039,14 @@ def requests_page(request):
     # Incoming: Requests for your shifts (where you're the instructor)
     # - Cover requests received: training.instructor == you, requested_by != you, offered_by == None
     # - Cover offers received: training.instructor == you, requested_by == you, offered_by != None
+    # Exclude cover requests you sent (requested_by == you and request_type == 'cover' and no offer yet)
     incoming_shift_requests_qs = ShiftRequest.objects.filter(
         training__instructor=request.user,
         status='pending'
+    ).exclude(
+        requested_by=request.user,
+        request_type='cover',
+        offered_by__isnull=True
     ).select_related('training', 'requested_by', 'offered_by').order_by('-created_at')
     
     # Separate: Cover offers received (where you requested cover and someone offered)
@@ -1302,6 +1307,12 @@ def approve_shift_request(request, request_id):
         # Create new calendar events AFTER swapping (outside transaction)
         # Calendar sync failures are logged but don't affect the database transaction
         if shift_request.request_type == 'cover' and old_instructor and new_instructor:
+            # Refresh training object to ensure we have the latest instructor
+            shift_request.training.refresh_from_db()
+            # Clear the old event ID since we're creating a new event in a different calendar
+            shift_request.training.google_event_id = None
+            shift_request.training.save(update_fields=['google_event_id'])
+            # Create new event in new instructor's calendar
             create_google_calendar_event(new_instructor, shift_request.training)
             
         elif shift_request.request_type == 'swap' and training1 and training2 and instructor1 and instructor2:
@@ -1451,18 +1462,18 @@ def manage_availability(request):
                 availability.user = request.user
                 availability.save()
                 messages.success(request, "Availability pattern saved.")
+                return redirect('dashboard:my_shifts')
             except ValidationError as e:
                 messages.error(request, f"Error saving availability: {e}")
             except Exception as e:
                 # Handle unique constraint violation
                 if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
-                    messages.error(request, "This availability pattern already exists.")
+                    messages.error(request, "This availability pattern already exists. Please choose a different day, time, or modify an existing pattern.")
                 else:
                     messages.error(request, "An error occurred while saving availability. Please try again.")
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error saving availability: {e}", exc_info=True)
-            return redirect('dashboard:manage_availability')
     else:
         form = AvailabilityForm()
     
@@ -1484,7 +1495,7 @@ def delete_availability(request, availability_id):
     availability = get_object_or_404(Availability, id=availability_id, user=request.user)
     availability.delete()
     messages.success(request, "Availability pattern deleted.")
-    return redirect('dashboard:manage_availability')
+    return redirect('dashboard:my_shifts')
 
 @never_cache
 @login_required
