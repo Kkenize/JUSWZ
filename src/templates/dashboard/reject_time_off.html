@@ -1,0 +1,43 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Reject Time-Off Request - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Reject Time-Off Request</h1>
+    </div>
+    <a href="{% url 'dashboard:requests' %}" class="btn btn-outline-secondary">← Back to Requests</a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Request Details</h5>
+          <p><strong>Requested by:</strong> {{ time_off.user.get_full_name|default:time_off.user.username }}</p>
+          <p><strong>Dates:</strong> {{ time_off.start_date|date:"M j, Y" }} - {{ time_off.end_date|date:"M j, Y" }}</p>
+          {% if time_off.reason %}
+            <p><strong>Reason:</strong> {{ time_off.reason }}</p>
+          {% endif %}
+          
+          <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="rejection_reason" class="form-label">Rejection Reason (Optional)</label>
+              <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" placeholder="Optional reason for rejection"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">Reject Request</button>
+              <a href="{% url 'dashboard:requests' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

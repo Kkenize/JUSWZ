@@ -27,6 +27,166 @@ class Training(models.Model):
     def is_full(self):
         return self.participants.count() >= self.capacity
 
+    def __str__(self):
+        return f"{self.title} - {self.date} ({self.instructor.username})"
+
+
+class ShiftRequest(models.Model):
+    """Handles both cover requests and swap requests for shifts."""
+    REQUEST_TYPE_CHOICES = [
+        ('cover', 'Cover Request'),
+        ('swap', 'Swap Request'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    # The shift being requested
+    training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='shift_requests')
+    
+    # Who made the request
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shift_requests_made')
+    
+    # Type of request
+    request_type = models.CharField(max_length=10, choices=REQUEST_TYPE_CHOICES)
+    
+    # For swap requests: which shift to swap with
+    swap_with_training = models.ForeignKey(
+        Training, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='swap_requests_for'
+    )
+    
+    # For cover requests: who offered to cover (set when someone offers)
+    offered_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cover_offers_made'
+    )
+    
+    # Status tracking
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    
+    # Additional info
+    notes = models.TextField(blank=True)
+    
+    # Approval tracking
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='shift_requests_approved'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.request_type} for {self.training.title} by {self.requested_by.username} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+    
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+
+
+class TimeOffRequest(models.Model):
+    """Time-off requests from staff members."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_off_requests')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    start_time = models.TimeField(null=True, blank=True)  # Optional: for partial days
+    end_time = models.TimeField(null=True, blank=True)    # Optional: for partial days
+    reason = models.TextField(blank=True)
+    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='time_off_requests_approved'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.start_date} to {self.end_date} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+    
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+    
+    @property
+    def is_rejected(self):
+        return self.status == 'rejected'
+
+
+class Availability(models.Model):
+    """Recurring weekly availability patterns for staff members."""
+    DAY_CHOICES = [
+        (0, 'Monday'),
+        (1, 'Tuesday'),
+        (2, 'Wednesday'),
+        (3, 'Thursday'),
+        (4, 'Friday'),
+        (5, 'Saturday'),
+        (6, 'Sunday'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='availability_patterns')
+    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_available = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name_plural = 'Availabilities'
+        unique_together = ['user', 'day_of_week', 'start_time', 'end_time']
+        ordering = ['day_of_week', 'start_time']
+    
+    def __str__(self):
+        day_name = dict(self.DAY_CHOICES)[self.day_of_week]
+        status = "Available" if self.is_available else "Unavailable"
+        return f"{self.user.username} - {day_name} {self.start_time}-{self.end_time} ({status})"
+
+
 def create_google_calendar_event(user, training, *, save_event_id=True):
     """Attempt to sync the session to the user's Google Calendar."""
 

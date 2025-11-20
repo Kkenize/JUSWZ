@@ -1,0 +1,60 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Request Cover - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Request Cover</h1>
+      <p class="text-muted mb-0">Request cover for this shift, optionally with a swap</p>
+    </div>
+    <a href="{% url 'dashboard:my_shifts' %}" class="btn btn-outline-secondary">← Back to My Shifts</a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Shift Details</h5>
+          <p><strong>Title:</strong> {{ training.title }}</p>
+          <p><strong>Date:</strong> {{ training.date|date:"M j, Y" }}</p>
+          <p><strong>Time:</strong> {{ training.start_time|time:"P" }} - {{ training.end_time|time:"P" }}</p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Request Cover</h5>
+          <p class="text-muted mb-3">Optionally select one of your shifts to request a swap instead of just cover.</p>
+          <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+              {% if field.name != 'request_type' %}
+                <div class="mb-3">
+                  <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                  {% endif %}
+                  {% if field.errors %}
+                    <div class="text-danger">{{ field.errors }}</div>
+                  {% endif %}
+                </div>
+              {% else %}
+                {{ field }}
+              {% endif %}
+            {% endfor %}
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary">Submit Request</button>
+              <a href="{% url 'dashboard:my_shifts' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

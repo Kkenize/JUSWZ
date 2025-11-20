@@ -100,7 +100,7 @@
                 </thead>
                 <tbody>
                   {% for shift in my_shifts %}
-                    <tr class="shift-row">
+                    <tr class="shift-row" data-training-id="{{ shift.id }}" style="cursor: pointer;">
                       <td class="fw-semibold">{{ shift.title }}</td>
                       <td>{{ shift.date|date:"M j, Y" }}</td>
                       <td>{{ shift.start_time|time:"P" }}</td>
@@ -112,6 +112,48 @@
                 </tbody>
               </table>
             </div>
+            
+            <!-- Pagination for My Shifts -->
+            {% if my_shifts_page.has_other_pages %}
+              <nav aria-label="My shifts pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+                  {% if my_shifts_page.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?view=list&filter=my_shifts&my_shifts_page=1">First</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">First</span>
+                    </li>
+                  {% endif %}
+                  
+                  {% for num in my_shifts_page.paginator.page_range %}
+                    {% if my_shifts_page.number == num %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% elif num > my_shifts_page.number|add:'-3' and num < my_shifts_page.number|add:'3' %}
+                      <li class="page-item">
+                        <a class="page-link" href="?view=list&filter=my_shifts&my_shifts_page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                  
+                  {% if my_shifts_page.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?view=list&filter=my_shifts&my_shifts_page={{ my_shifts_page.paginator.num_pages }}">Last</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">Last</span>
+                    </li>
+                  {% endif %}
+                </ul>
+              </nav>
+              <p class="text-muted text-center mt-2">
+                Showing {{ my_shifts_page.start_index }} to {{ my_shifts_page.end_index }} of {{ my_shifts_page.paginator.count }} shifts
+              </p>
+            {% endif %}
           {% else %}
             <p class="text-muted text-center py-5">No shifts found.</p>
           {% endif %}
@@ -132,7 +174,7 @@
                 </thead>
                 <tbody>
                   {% for shift in all_trainers_shifts %}
-                    <tr class="shift-row {% if shift.is_my_shift %}table-warning{% endif %}">
+                    <tr class="shift-row {% if shift.is_my_shift %}table-warning{% endif %}" data-training-id="{{ shift.id }}" style="cursor: pointer;">
                       <td class="fw-semibold">{{ shift.title }}</td>
                       <td>
                         {{ shift.instructor }}
@@ -150,6 +192,48 @@
                 </tbody>
               </table>
             </div>
+            
+            <!-- Pagination for All Trainers Shifts -->
+            {% if all_trainers_shifts_page.has_other_pages %}
+              <nav aria-label="All trainers shifts pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+                  {% if all_trainers_shifts_page.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?view=list&filter=all_trainers&all_trainers_page=1">First</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">First</span>
+                    </li>
+                  {% endif %}
+                  
+                  {% for num in all_trainers_shifts_page.paginator.page_range %}
+                    {% if all_trainers_shifts_page.number == num %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% elif num > all_trainers_shifts_page.number|add:'-3' and num < all_trainers_shifts_page.number|add:'3' %}
+                      <li class="page-item">
+                        <a class="page-link" href="?view=list&filter=all_trainers&all_trainers_page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                  
+                  {% if all_trainers_shifts_page.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?view=list&filter=all_trainers&all_trainers_page={{ all_trainers_shifts_page.paginator.num_pages }}">Last</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">Last</span>
+                    </li>
+                  {% endif %}
+                </ul>
+              </nav>
+              <p class="text-muted text-center mt-2">
+                Showing {{ all_trainers_shifts_page.start_index }} to {{ all_trainers_shifts_page.end_index }} of {{ all_trainers_shifts_page.paginator.count }} shifts
+              </p>
+            {% endif %}
           {% else %}
             <p class="text-muted text-center py-5">No shifts found.</p>
           {% endif %}
@@ -161,6 +245,40 @@
         <div class="calendar-container shadow-sm rounded p-4" style="background-color:#f7f4ee;">
           <div id="calendar"></div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shift Detail Modal -->
+<div class="modal fade" id="shiftDetailModal" tabindex="-1" aria-labelledby="shiftDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="shiftDetailModalLabel">Shift Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h4 id="shiftModalTitle" class="mb-3"></h4>
+        <div class="mb-2">
+          <strong>Date:</strong> <span id="shiftModalDate"></span>
+        </div>
+        <div class="mb-2">
+          <strong>Time:</strong> <span id="shiftModalTime"></span>
+        </div>
+        <div class="mb-2">
+          <strong>Instructor:</strong> <span id="shiftModalInstructor"></span>
+        </div>
+        <div class="mb-3">
+          <strong>Participants:</strong> <span id="shiftModalParticipants"></span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap" id="shiftModalActions">
+          <a id="requestCoverBtn" href="#" class="btn btn-warning" style="display: none;">Request Cover</a>
+          <a id="offerCoverBtn" href="#" class="btn btn-success" style="display: none;">Offer to Cover</a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -204,6 +322,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const newUrl = new URL(window.location);
       newUrl.searchParams.set('filter', currentFilter);
       newUrl.searchParams.set('view', currentView);
+      // Reset pagination when switching filters
+      if (currentFilter === 'my_shifts') {
+        newUrl.searchParams.set('my_shifts_page', '1');
+        newUrl.searchParams.delete('all_trainers_page');
+      } else {
+        newUrl.searchParams.set('all_trainers_page', '1');
+        newUrl.searchParams.delete('my_shifts_page');
+      }
       window.location.href = newUrl.toString();
     } else {
       // For calendar view, update dynamically
@@ -243,13 +369,18 @@ document.addEventListener('DOMContentLoaded', function() {
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
+      // Month view settings
+      dayMaxEvents: 3,
+      eventDisplay: 'list-item',
+      moreLinkClick: 'popover',
       eventSources: [{
         url: getEventsUrl(),
         method: 'GET'
       }],
       eventClick: function(info) {
-        // Optional: Add click handler for events
-        console.log('Event clicked:', info.event);
+        // Show shift detail modal
+        const trainingId = info.event.id;
+        showShiftDetailModal(trainingId);
       }
     });
 
@@ -275,6 +406,70 @@ document.addEventListener('DOMContentLoaded', function() {
   if (currentView === 'calendar') {
     initializeCalendar();
     window.calendarInitialized = true;
+  }
+
+  // Set up click handlers for list view rows
+  function setupListViewClickHandlers() {
+    const shiftRows = document.querySelectorAll('.shift-row[data-training-id]');
+    shiftRows.forEach(row => {
+      row.addEventListener('click', function() {
+        const trainingId = this.getAttribute('data-training-id');
+        if (trainingId) {
+          showShiftDetailModal(trainingId);
+        }
+      });
+    });
+  }
+
+  // Initialize list view click handlers
+  if (currentView === 'list') {
+    setupListViewClickHandlers();
+  }
+
+  // Shift Detail Modal Functions
+  function showShiftDetailModal(trainingId) {
+    const baseUrl = window.location.origin;
+    const apiUrl = `${baseUrl}/dashboard/my-shifts/shift/${trainingId}/details/`;
+    
+    fetch(apiUrl)
+      .then(response => response.json())
+      .then(data => {
+        // Populate modal with shift data
+        document.getElementById('shiftModalTitle').textContent = data.title;
+        document.getElementById('shiftModalDate').textContent = new Date(data.date).toLocaleDateString('en-US', { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+        document.getElementById('shiftModalTime').textContent = `${data.start_time} - ${data.end_time}`;
+        document.getElementById('shiftModalInstructor').textContent = data.instructor;
+        document.getElementById('shiftModalParticipants').textContent = `${data.participants_count} / ${data.capacity}`;
+        
+        // Show/hide action buttons based on permissions and set URLs
+        const requestCoverBtn = document.getElementById('requestCoverBtn');
+        const offerCoverBtn = document.getElementById('offerCoverBtn');
+        
+        if (data.can_request_cover) {
+          requestCoverBtn.style.display = 'inline-block';
+          requestCoverBtn.href = `${baseUrl}/dashboard/my-shifts/request-swap/${trainingId}/`;
+        } else {
+          requestCoverBtn.style.display = 'none';
+        }
+        
+        if (data.can_offer_cover) {
+          offerCoverBtn.style.display = 'inline-block';
+          offerCoverBtn.href = `${baseUrl}/dashboard/my-shifts/offer-cover/${trainingId}/`;
+        } else {
+          offerCoverBtn.style.display = 'none';
+        }
+        
+        // Show modal
+        const modalElement = document.getElementById('shiftDetailModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Error fetching shift details:', error);
+        alert('Error loading shift details');
+      });
   }
 });
 </script>

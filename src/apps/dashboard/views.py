@@ -8,12 +8,16 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.forms import modelformset_factory
+from django import forms
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Case, When, IntegerField
+from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training, create_google_calendar_event, remove_google_calendar_event
-from .forms import TrainingSessionForm
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, create_google_calendar_event, remove_google_calendar_event
+from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
@@ -403,16 +407,19 @@ def my_shifts_api(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     today = timezone.localdate()
+    next_week = today + timedelta(days=7)
     filter_mode = request.GET.get('filter', 'my_shifts')
     
     if filter_mode == 'my_shifts':
         trainings = Training.objects.filter(
             instructor=request.user,
-            date__gte=today
+            date__gte=today,
+            date__lte=next_week
         ).order_by('date', 'start_time')
     else:
         trainings = Training.objects.filter(
-            date__gte=today
+            date__gte=today,
+            date__lte=next_week
         ).select_related('instructor').order_by('date', 'start_time')
     
     data = []
@@ -760,6 +767,631 @@ def help_support(request):
         "user_profile": user_profile
     })
 
+
+# ========== SHIFT REQUESTS & AVAILABILITY MANAGEMENT ==========
+
+@never_cache
+@login_required
+def shift_detail_api(request, training_id):
+    """API endpoint to get shift details for modal."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    training = get_object_or_404(Training, id=training_id)
+    is_instructor = training.instructor == request.user
+    
+    data = {
+        'id': training.id,
+        'title': training.title,
+        'date': training.date.isoformat(),
+        'start_time': training.start_time.strftime('%H:%M'),
+        'end_time': training.end_time.strftime('%H:%M'),
+        'capacity': training.capacity,
+        'participants_count': training.participants.count(),
+        'instructor': training.instructor.get_full_name() or training.instructor.username,
+        'instructor_id': training.instructor.id,
+        'is_instructor': is_instructor,
+        'can_request_cover': is_instructor and training.date >= timezone.localdate(),
+        'can_offer_cover': not is_instructor and training.date >= timezone.localdate(),
+    }
+    
+    return JsonResponse(data)
+
+
+@never_cache
+@login_required
+def request_cover(request, training_id):
+    """Request someone to cover a shift."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    training = get_object_or_404(Training, id=training_id)
+    
+    if training.instructor != request.user:
+        messages.error(request, "You can only request cover for your own shifts.")
+        return redirect('dashboard:my_shifts')
+    
+    if training.date < timezone.localdate():
+        messages.error(request, "Cannot request cover for past shifts.")
+        return redirect('dashboard:my_shifts')
+    
+    # Check if request already exists
+    existing = ShiftRequest.objects.filter(
+        training=training,
+        requested_by=request.user,
+        request_type='cover',
+        status='pending'
+    ).first()
+    
+    if existing:
+        messages.info(request, "You already have a pending cover request for this shift.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    if request.method == 'POST':
+        form = ShiftRequestForm(request.POST, user=request.user, training=training)
+        if form.is_valid():
+            shift_request = form.save(commit=False)
+            shift_request.training = training
+            shift_request.requested_by = request.user
+            shift_request.request_type = 'cover'
+            shift_request.save()
+            messages.success(request, "Cover request created successfully!")
+            return redirect('dashboard:requests?main_tab=shift_requests')
+    else:
+        form = ShiftRequestForm(user=request.user, training=training)
+        form.fields['request_type'].initial = 'cover'
+        form.fields['swap_with_training'].widget = forms.HiddenInput()
+    
+    return render(request, 'dashboard/request_cover.html', {
+        'form': form,
+        'training': training,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def request_swap(request, training_id):
+    """Request to swap a shift with another person."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    training = get_object_or_404(Training, id=training_id)
+    
+    if training.instructor != request.user:
+        messages.error(request, "You can only request swaps for your own shifts.")
+        return redirect('dashboard:my_shifts')
+    
+    if training.date < timezone.localdate():
+        messages.error(request, "Cannot request swap for past shifts.")
+        return redirect('dashboard:my_shifts')
+    
+    if request.method == 'POST':
+        form = ShiftRequestForm(request.POST, user=request.user, training=training)
+        if form.is_valid():
+            shift_request = form.save(commit=False)
+            shift_request.training = training
+            shift_request.requested_by = request.user
+            # If no swap_with_training is selected, it's a cover request
+            if not shift_request.swap_with_training:
+                shift_request.request_type = 'cover'
+                messages.success(request, "Cover request created successfully!")
+            else:
+                shift_request.request_type = 'swap'
+                messages.success(request, "Swap request created successfully!")
+            shift_request.save()
+            return redirect('dashboard:requests?main_tab=shift_requests')
+    else:
+        form = ShiftRequestForm(user=request.user, training=training)
+        form.fields['request_type'].initial = 'swap'
+        form.fields['swap_with_training'].required = False
+    
+    return render(request, 'dashboard/request_swap.html', {
+        'form': form,
+        'training': training,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def offer_cover(request, training_id):
+    """Offer to cover or swap someone else's shift."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    training = get_object_or_404(Training, id=training_id)
+    
+    if training.instructor == request.user:
+        messages.error(request, "You cannot offer to cover or swap your own shift.")
+        return redirect('dashboard:my_shifts')
+    
+    if training.date < timezone.localdate():
+        messages.error(request, "Cannot offer to cover or swap past shifts.")
+        return redirect('dashboard:my_shifts')
+    
+    # Get user's available shifts for swap option
+    today = timezone.localdate()
+    my_available_shifts = Training.objects.filter(
+        instructor=request.user,
+        date__gte=today
+    ).exclude(id=training.id).order_by('date', 'start_time')
+    
+    if request.method == 'POST':
+        swap_with_training_id = request.POST.get('swap_with_training', '')
+        notes = request.POST.get('notes', '')
+        
+        try:
+            with transaction.atomic():
+                if swap_with_training_id:
+                    # Offer to swap
+                    swap_with_training = get_object_or_404(Training, id=swap_with_training_id)
+                    
+                    # Verify the swap training belongs to the user
+                    if swap_with_training.instructor != request.user:
+                        messages.error(request, "You can only offer to swap with your own shifts.")
+                        return redirect('dashboard:requests?main_tab=shift_requests')
+                    
+                    # Check if there's already a swap request
+                    swap_request = ShiftRequest.objects.select_for_update().filter(
+                        training=training,
+                        request_type='swap',
+                        swap_with_training=swap_with_training,
+                        status='pending'
+                    ).first()
+                    
+                    if not swap_request:
+                        # Create a new swap request
+                        swap_request = ShiftRequest.objects.create(
+                            training=training,
+                            requested_by=training.instructor,
+                            request_type='swap',
+                            swap_with_training=swap_with_training,
+                            offered_by=request.user,
+                            status='pending',
+                            notes=notes or f"Swap offered by {request.user.get_full_name() or request.user.username}"
+                        )
+                    else:
+                        # Check if someone else already offered this swap
+                        if swap_request.offered_by and swap_request.offered_by != request.user:
+                            messages.warning(request, "Someone else has already offered this swap.")
+                            return redirect('dashboard:requests?main_tab=shift_requests')
+                        
+                        # Update offer
+                        swap_request.offered_by = request.user
+                        if notes:
+                            swap_request.notes = notes
+                        swap_request.save()
+                    
+                    messages.success(request, f"You've offered to swap {swap_with_training.title} with {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+                else:
+                    # Offer to cover (no swap selected)
+                    cover_request = ShiftRequest.objects.select_for_update().filter(
+                        training=training,
+                        request_type='cover',
+                        status='pending'
+                    ).first()
+                    
+                    if not cover_request:
+                        # Create a new cover request and immediately offer
+                        cover_request = ShiftRequest.objects.create(
+                            training=training,
+                            requested_by=training.instructor,
+                            request_type='cover',
+                            offered_by=request.user,
+                            status='pending',
+                            notes=notes or f"Offered by {request.user.get_full_name() or request.user.username}"
+                        )
+                    else:
+                        # Check if someone else already offered
+                        if cover_request.offered_by and cover_request.offered_by != request.user:
+                            messages.warning(request, "Someone else has already offered to cover this shift.")
+                            return redirect('dashboard:requests?main_tab=shift_requests')
+                        
+                        # Offer on existing request
+                        cover_request.offered_by = request.user
+                        if notes:
+                            cover_request.notes = notes
+                        cover_request.save()
+                    
+                    messages.success(request, f"You've offered to cover {training.instructor.get_full_name() or training.instructor.username}'s shift!")
+        
+        except Exception as e:
+            messages.error(request, "An error occurred while making the offer. Please try again.")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error offering to cover/swap training {training_id}: {e}", exc_info=True)
+        
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    # GET request - show form
+    return render(request, 'dashboard/offer_cover.html', {
+        'training': training,
+        'my_available_shifts': my_available_shifts,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def requests_page(request):
+    """Main requests page with tabs for shift requests and time off requests."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    today = timezone.localdate()
+    
+    # Get main tab (shift_requests or time_off_requests)
+    main_tab = request.GET.get('main_tab', 'shift_requests')
+    
+    # Shift Requests Data
+    incoming_shift_requests_qs = ShiftRequest.objects.filter(
+        training__instructor=request.user,
+        status='pending'
+    ).select_related('training', 'requested_by', 'offered_by').order_by('-created_at')
+    
+    # Outgoing requests (user's own requests) - pending first, then by creation date
+    outgoing_shift_requests_qs = ShiftRequest.objects.filter(
+        requested_by=request.user
+    ).select_related('training', 'offered_by').annotate(
+        status_priority=Case(
+            When(status='pending', then=0),
+            When(status='approved', then=1),
+            When(status='rejected', then=2),
+            When(status='cancelled', then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('status_priority', '-created_at')
+    
+    # Time Off Requests Data
+    outgoing_time_off_qs = TimeOffRequest.objects.filter(
+        user=request.user
+    ).select_related('approved_by').order_by('-created_at')
+    
+    # Get user's shifts that can have requests (future shifts) for the "Send Request" tab
+    my_available_shifts_qs = Training.objects.filter(
+        instructor=request.user,
+        date__gte=today
+    ).order_by('date', 'start_time')
+    
+    # Get other trainers' shifts that user can offer to cover
+    other_trainers_shifts_qs = Training.objects.filter(
+        date__gte=today
+    ).exclude(instructor=request.user).select_related('instructor').order_by('date', 'start_time')
+    
+    # Paginate querysets
+    from django.core.paginator import Paginator
+    
+    incoming_shift_requests_paginator = Paginator(incoming_shift_requests_qs, 5)
+    incoming_shift_requests_page = request.GET.get('incoming_shift_page', 1)
+    incoming_shift_requests = incoming_shift_requests_paginator.get_page(incoming_shift_requests_page)
+    
+    outgoing_shift_requests_paginator = Paginator(outgoing_shift_requests_qs, 5)
+    outgoing_shift_requests_page = request.GET.get('outgoing_shift_page', 1)
+    outgoing_shift_requests = outgoing_shift_requests_paginator.get_page(outgoing_shift_requests_page)
+    
+    outgoing_time_off_paginator = Paginator(outgoing_time_off_qs, 5)
+    outgoing_time_off_page = request.GET.get('outgoing_time_off_page', 1)
+    outgoing_time_off = outgoing_time_off_paginator.get_page(outgoing_time_off_page)
+    
+    # Pagination for Send Request section
+    my_available_shifts_paginator = Paginator(my_available_shifts_qs, 5)
+    my_available_shifts_page = request.GET.get('my_shifts_page', 1)
+    my_available_shifts = my_available_shifts_paginator.get_page(my_available_shifts_page)
+    
+    other_trainers_shifts_paginator = Paginator(other_trainers_shifts_qs, 5)
+    other_trainers_shifts_page = request.GET.get('other_shifts_page', 1)
+    other_trainers_shifts = other_trainers_shifts_paginator.get_page(other_trainers_shifts_page)
+    
+    # Get sub-tabs
+    shift_sub_tab = request.GET.get('shift_tab', 'incoming')
+    time_off_sub_tab = request.GET.get('time_off_tab', 'sent')
+    
+    # Count pending requests for badge
+    pending_count = incoming_shift_requests_qs.count()
+    
+    # Handle time off form submission
+    form = None
+    if main_tab == 'time_off_requests' and time_off_sub_tab == 'send' and request.method == 'POST':
+        form = TimeOffRequestForm(request.POST)
+        if form.is_valid():
+            time_off = form.save(commit=False)
+            time_off.user = request.user
+            time_off.save()
+            messages.success(request, "Time-off request submitted successfully!")
+            return redirect('dashboard:requests?main_tab=time_off_requests&time_off_tab=sent')
+    elif main_tab == 'time_off_requests' and time_off_sub_tab == 'send':
+        form = TimeOffRequestForm()
+    
+    return render(request, 'dashboard/requests_page.html', {
+        'user_profile': user_profile,
+        'incoming_shift_requests': incoming_shift_requests,
+        'outgoing_shift_requests': outgoing_shift_requests,
+        'outgoing_time_off': outgoing_time_off,
+        'my_available_shifts': my_available_shifts,
+        'other_trainers_shifts': other_trainers_shifts,
+        'pending_count': pending_count,
+        'main_tab': main_tab,
+        'shift_sub_tab': shift_sub_tab,
+        'time_off_sub_tab': time_off_sub_tab,
+        'form': form,
+    })
+
+
+@never_cache
+@login_required
+def approve_shift_request(request, request_id):
+    """Approve a shift request."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    shift_request = get_object_or_404(ShiftRequest, id=request_id)
+    
+    # Check if user can approve (must be the instructor of the shift)
+    if shift_request.training.instructor != request.user:
+        messages.error(request, "You can only approve requests for your own shifts.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    if shift_request.status != 'pending':
+        messages.error(request, "This request has already been processed.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    if shift_request.request_type == 'cover' and not shift_request.offered_by:
+        messages.error(request, "Cannot approve cover request without an offer.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    # Use transaction to ensure atomicity
+    try:
+        # Store values before transaction for calendar sync
+        old_instructor = None
+        new_instructor = None
+        training1 = None
+        training2 = None
+        instructor1 = None
+        instructor2 = None
+        
+        with transaction.atomic():
+            # Approve the request
+            shift_request.status = 'approved'
+            shift_request.approved_by = request.user
+            shift_request.approved_at = timezone.now()
+            shift_request.save()
+            
+            # Transfer the shift
+            if shift_request.request_type == 'cover':
+                # Cover request: transfer shift to the person who offered
+                old_instructor = shift_request.training.instructor
+                new_instructor = shift_request.offered_by
+                
+                # Verify new_instructor is still valid
+                if not new_instructor:
+                    raise ValidationError("Cannot approve: offer has been withdrawn.")
+                
+                shift_request.training.instructor = new_instructor
+                shift_request.training.save()
+                
+            elif shift_request.request_type == 'swap' and shift_request.swap_with_training:
+                # Swap request: swap instructors between two shifts
+                training1 = shift_request.training
+                training2 = shift_request.swap_with_training
+                
+                # Verify that training2 still exists and belongs to the requester
+                if not training2:
+                    raise ValidationError("Cannot approve: swap training no longer exists.")
+                
+                if training2.instructor != shift_request.requested_by:
+                    raise ValidationError("Invalid swap request: the swap training must belong to the requester.")
+                
+                # Verify training1 still belongs to the approver
+                if training1.instructor != request.user:
+                    raise ValidationError("Cannot approve: you are no longer the instructor of this shift.")
+                
+                # Swap the instructors
+                instructor1 = training1.instructor
+                instructor2 = training2.instructor
+                
+                training1.instructor = instructor2
+                training1.save()
+                training2.instructor = instructor1
+                training2.save()
+        
+        # Sync calendars after successful database update (outside transaction)
+        # Calendar sync failures are logged but don't affect the database transaction
+        if shift_request.request_type == 'cover' and old_instructor and new_instructor:
+            remove_google_calendar_event(old_instructor, shift_request.training)
+            create_google_calendar_event(new_instructor, shift_request.training)
+            
+        elif shift_request.request_type == 'swap' and training1 and training2 and instructor1 and instructor2:
+            remove_google_calendar_event(instructor1, training1)
+            remove_google_calendar_event(instructor2, training2)
+            create_google_calendar_event(instructor2, training1)
+            create_google_calendar_event(instructor1, training2)
+        
+        messages.success(request, "Request approved successfully!")
+        
+    except ValidationError as e:
+        messages.error(request, str(e))
+    except Exception as e:
+        messages.error(request, "An error occurred while approving the request. Please try again.")
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error approving shift request {request_id}: {e}", exc_info=True)
+    
+    return redirect('dashboard:requests?main_tab=shift_requests')
+
+
+@never_cache
+@login_required
+def reject_shift_request(request, request_id):
+    """Reject a shift request."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    shift_request = get_object_or_404(ShiftRequest, id=request_id)
+    
+    if shift_request.training.instructor != request.user:
+        messages.error(request, "You can only reject requests for your own shifts.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    if request.method == 'POST':
+        rejection_reason = request.POST.get('rejection_reason', '')
+        shift_request.status = 'rejected'
+        shift_request.approved_by = request.user
+        shift_request.approved_at = timezone.now()
+        shift_request.rejection_reason = rejection_reason
+        shift_request.save()
+        messages.success(request, "Request rejected.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    return render(request, 'dashboard/reject_request.html', {
+        'shift_request': shift_request,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def cancel_shift_request(request, request_id):
+    """Cancel own shift request."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    shift_request = get_object_or_404(ShiftRequest, id=request_id)
+    
+    if shift_request.requested_by != request.user:
+        messages.error(request, "You can only cancel your own requests.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    if shift_request.status != 'pending':
+        messages.error(request, "Cannot cancel a request that has already been processed.")
+        return redirect('dashboard:requests?main_tab=shift_requests')
+    
+    shift_request.status = 'cancelled'
+    shift_request.save()
+    messages.success(request, "Request cancelled.")
+    return redirect('dashboard:requests?main_tab=shift_requests')
+
+
+@never_cache
+@login_required
+def request_time_off(request):
+    """Request time off - redirects to requests page."""
+    return redirect('dashboard:requests?main_tab=time_off_requests&time_off_tab=send')
+
+
+@never_cache
+@login_required
+def approve_time_off(request, request_id):
+    """Approve a time-off request."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    time_off = get_object_or_404(TimeOffRequest, id=request_id)
+    
+    if time_off.status != 'pending':
+        messages.error(request, "This request has already been processed.")
+        return redirect('dashboard:requests?main_tab=time_off_requests')
+    
+    time_off.status = 'approved'
+    time_off.approved_by = request.user
+    time_off.approved_at = timezone.now()
+    time_off.save()
+    
+    messages.success(request, "Time-off request approved.")
+    return redirect('dashboard:requests?main_tab=time_off_requests')
+
+
+@never_cache
+@login_required
+def reject_time_off(request, request_id):
+    """Reject a time-off request."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    time_off = get_object_or_404(TimeOffRequest, id=request_id)
+    
+    if request.method == 'POST':
+        rejection_reason = request.POST.get('rejection_reason', '')
+        time_off.status = 'rejected'
+        time_off.approved_by = request.user
+        time_off.approved_at = timezone.now()
+        time_off.rejection_reason = rejection_reason
+        time_off.save()
+        messages.success(request, "Time-off request rejected.")
+        return redirect('dashboard:requests?main_tab=time_off_requests')
+    
+    return render(request, 'dashboard/reject_time_off.html', {
+        'time_off': time_off,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def manage_availability(request):
+    """Manage recurring availability patterns."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    availabilities = Availability.objects.filter(user=request.user).order_by('day_of_week', 'start_time')
+    
+    if request.method == 'POST':
+        # Handle form submission for adding/updating availability
+        form = AvailabilityForm(request.POST)
+        if form.is_valid():
+            try:
+                availability = form.save(commit=False)
+                availability.user = request.user
+                availability.save()
+                messages.success(request, "Availability pattern saved.")
+            except ValidationError as e:
+                messages.error(request, f"Error saving availability: {e}")
+            except Exception as e:
+                # Handle unique constraint violation
+                if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
+                    messages.error(request, "This availability pattern already exists.")
+                else:
+                    messages.error(request, "An error occurred while saving availability. Please try again.")
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error saving availability: {e}", exc_info=True)
+            return redirect('dashboard:manage_availability')
+    else:
+        form = AvailabilityForm()
+    
+    return render(request, 'dashboard/manage_availability.html', {
+        'form': form,
+        'availabilities': availabilities,
+        'user_profile': user_profile,
+    })
+
+
+@never_cache
+@login_required
+def delete_availability(request, availability_id):
+    """Delete an availability pattern."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'staff':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    availability = get_object_or_404(Availability, id=availability_id, user=request.user)
+    availability.delete()
+    messages.success(request, "Availability pattern deleted.")
+    return redirect('dashboard:manage_availability')
+
 @never_cache
 @login_required
 def my_shifts(request):
@@ -769,47 +1401,21 @@ def my_shifts(request):
         return HttpResponseForbidden("You do not have permission to access this page.")
     
     today = timezone.localdate()
+    next_week = today + timedelta(days=7)
     now = timezone.now()
     
-    # Get staff member's own upcoming shifts
+    # Get staff member's own upcoming shifts (next week)
     my_shifts_qs = Training.objects.filter(
         instructor=request.user,
-        date__gte=today
+        date__gte=today,
+        date__lte=next_week
     ).order_by('date', 'start_time')
     
-    my_shifts_list = [
-        {
-            "id": training.id,
-            "title": training.title,
-            "date": training.date,
-            "start_time": training.start_time,
-            "end_time": training.end_time,
-            "capacity": training.capacity,
-            "participants_count": training.participants.count(),
-            "instructor": training.instructor.get_full_name() or training.instructor.username,
-        }
-        for training in my_shifts_qs
-    ]
-    
-    # Get all trainers' upcoming shifts
+    # Get all trainers' upcoming shifts (next week)
     all_trainers_shifts_qs = Training.objects.filter(
-        date__gte=today
+        date__gte=today,
+        date__lte=next_week
     ).select_related('instructor').prefetch_related('participants').order_by('date', 'start_time')
-    
-    all_trainers_shifts_list = [
-        {
-            "id": training.id,
-            "title": training.title,
-            "date": training.date,
-            "start_time": training.start_time,
-            "end_time": training.end_time,
-            "capacity": training.capacity,
-            "participants_count": training.participants.count(),
-            "instructor": training.instructor.get_full_name() or training.instructor.username,
-            "is_my_shift": training.instructor == request.user,
-        }
-        for training in all_trainers_shifts_qs
-    ]
     
     # Get view mode from query params (list or calendar)
     view_mode = request.GET.get('view', 'list')
@@ -817,41 +1423,94 @@ def my_shifts(request):
     # Get filter mode from query params (my_shifts or all_trainers)
     filter_mode = request.GET.get('filter', 'my_shifts')
     
-    # Serialize for JavaScript calendar
+    # For calendar view, we need all shifts in JSON format
     import json
     my_shifts_json = json.dumps([
         {
-            "id": shift["id"],
-            "title": shift["title"],
-            "date": shift["date"].isoformat() if hasattr(shift["date"], 'isoformat') else str(shift["date"]),
-            "start_time": shift["start_time"].strftime("%H:%M:%S") if hasattr(shift["start_time"], 'strftime') else str(shift["start_time"]),
-            "end_time": shift["end_time"].strftime("%H:%M:%S") if hasattr(shift["end_time"], 'strftime') else str(shift["end_time"]),
-            "capacity": shift["capacity"],
-            "participants_count": shift["participants_count"],
-            "instructor": shift["instructor"],
+            "id": training.id,
+            "title": training.title,
+            "date": training.date.isoformat(),
+            "start_time": training.start_time.strftime("%H:%M:%S"),
+            "end_time": training.end_time.strftime("%H:%M:%S"),
+            "capacity": training.capacity,
+            "participants_count": training.participants.count(),
+            "instructor": training.instructor.get_full_name() or training.instructor.username,
         }
-        for shift in my_shifts_list
+        for training in my_shifts_qs
     ])
     
     all_trainers_shifts_json = json.dumps([
         {
-            "id": shift["id"],
-            "title": shift["title"],
-            "date": shift["date"].isoformat() if hasattr(shift["date"], 'isoformat') else str(shift["date"]),
-            "start_time": shift["start_time"].strftime("%H:%M:%S") if hasattr(shift["start_time"], 'strftime') else str(shift["start_time"]),
-            "end_time": shift["end_time"].strftime("%H:%M:%S") if hasattr(shift["end_time"], 'strftime') else str(shift["end_time"]),
-            "capacity": shift["capacity"],
-            "participants_count": shift["participants_count"],
-            "instructor": shift["instructor"],
-            "is_my_shift": shift.get("is_my_shift", False),
+            "id": training.id,
+            "title": training.title,
+            "date": training.date.isoformat(),
+            "start_time": training.start_time.strftime("%H:%M:%S"),
+            "end_time": training.end_time.strftime("%H:%M:%S"),
+            "capacity": training.capacity,
+            "participants_count": training.participants.count(),
+            "instructor": training.instructor.get_full_name() or training.instructor.username,
+            "is_my_shift": training.instructor == request.user,
         }
-        for shift in all_trainers_shifts_list
+        for training in all_trainers_shifts_qs
     ])
+    
+    # For list view, paginate the shifts (5 per page)
+    my_shifts_paginator = None
+    all_trainers_shifts_paginator = None
+    my_shifts_page = None
+    all_trainers_shifts_page = None
+    
+    if view_mode == 'list':
+        # Paginate my shifts
+        my_shifts_paginator = Paginator(my_shifts_qs, 5)
+        my_shifts_page_num = request.GET.get('my_shifts_page', 1)
+        my_shifts_page = my_shifts_paginator.get_page(my_shifts_page_num)
+        
+        # Paginate all trainers shifts
+        all_trainers_shifts_paginator = Paginator(all_trainers_shifts_qs, 5)
+        all_trainers_shifts_page_num = request.GET.get('all_trainers_page', 1)
+        all_trainers_shifts_page = all_trainers_shifts_paginator.get_page(all_trainers_shifts_page_num)
+        
+        # Convert paginated querysets to lists for template
+        my_shifts_list = [
+            {
+                "id": training.id,
+                "title": training.title,
+                "date": training.date,
+                "start_time": training.start_time,
+                "end_time": training.end_time,
+                "capacity": training.capacity,
+                "participants_count": training.participants.count(),
+                "instructor": training.instructor.get_full_name() or training.instructor.username,
+            }
+            for training in my_shifts_page
+        ]
+        
+        all_trainers_shifts_list = [
+            {
+                "id": training.id,
+                "title": training.title,
+                "date": training.date,
+                "start_time": training.start_time,
+                "end_time": training.end_time,
+                "capacity": training.capacity,
+                "participants_count": training.participants.count(),
+                "instructor": training.instructor.get_full_name() or training.instructor.username,
+                "is_my_shift": training.instructor == request.user,
+            }
+            for training in all_trainers_shifts_page
+        ]
+    else:
+        # For calendar view, use empty lists (calendar uses JSON)
+        my_shifts_list = []
+        all_trainers_shifts_list = []
     
     return render(request, "dashboard/my_shifts.html", {
         "user_profile": user_profile,
         "my_shifts": my_shifts_list,
         "all_trainers_shifts": all_trainers_shifts_list,
+        "my_shifts_page": my_shifts_page,
+        "all_trainers_shifts_page": all_trainers_shifts_page,
         "view_mode": view_mode,
         "filter_mode": filter_mode,
         "my_shifts_json": my_shifts_json,

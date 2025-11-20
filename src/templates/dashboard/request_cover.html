@@ -1,0 +1,46 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Request Cover - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Request Cover</h1>
+      <p class="text-muted mb-0">Request someone to cover your shift</p>
+    </div>
+    <a href="{% url 'dashboard:my_shifts' %}" class="btn btn-outline-secondary">← Back to My Shifts</a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Shift Details</h5>
+          <p><strong>Title:</strong> {{ training.title }}</p>
+          <p><strong>Date:</strong> {{ training.date|date:"M j, Y" }}</p>
+          <p><strong>Time:</strong> {{ training.start_time|time:"P" }} - {{ training.end_time|time:"P" }}</p>
+          <p><strong>Capacity:</strong> {{ training.capacity }}</p>
+          <p><strong>Participants:</strong> {{ training.participants.count }} / {{ training.capacity }}</p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Request Cover</h5>
+          <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary">Submit Request</button>
+              <a href="{% url 'dashboard:my_shifts' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

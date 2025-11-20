@@ -41,4 +41,26 @@ urlpatterns = [
     
     # My Shifts (staff)
     path('my-shifts/', views.my_shifts, name='my_shifts'),
+    
+    # Shift Requests & Availability
+    path('my-shifts/shift/<int:training_id>/details/', views.shift_detail_api, name='shift_detail_api'),
+    path('my-shifts/request-cover/<int:training_id>/', views.request_cover, name='request_cover'),
+    path('my-shifts/request-swap/<int:training_id>/', views.request_swap, name='request_swap'),
+    path('my-shifts/offer-cover/<int:training_id>/', views.offer_cover, name='offer_cover'),
+    
+    # Requests Page
+    path('requests/', views.requests_page, name='requests'),
+    
+    # Shift Request Actions
+    path('requests/shift/<int:request_id>/approve/', views.approve_shift_request, name='approve_shift_request'),
+    path('requests/shift/<int:request_id>/reject/', views.reject_shift_request, name='reject_shift_request'),
+    path('requests/shift/<int:request_id>/cancel/', views.cancel_shift_request, name='cancel_shift_request'),
+    
+    # Time Off Actions
+    path('requests/time-off/<int:request_id>/approve/', views.approve_time_off, name='approve_time_off'),
+    path('requests/time-off/<int:request_id>/reject/', views.reject_time_off, name='reject_time_off'),
+    
+    # Availability
+    path('requests/availability/', views.manage_availability, name='manage_availability'),
+    path('requests/availability/<int:availability_id>/delete/', views.delete_availability, name='delete_availability'),
 ]
