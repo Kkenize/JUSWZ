@@ -1088,6 +1088,13 @@ def requests_page(request):
         user=request.user
     ).select_related('approved_by').order_by('-created_at')
     
+    # Incoming time off requests (only for admins - all pending requests from all users)
+    incoming_time_off_qs = TimeOffRequest.objects.none()  # Default empty queryset
+    if user_profile.role == 'admin':
+        incoming_time_off_qs = TimeOffRequest.objects.filter(
+            status='pending'
+        ).select_related('user', 'approved_by').order_by('-created_at')
+    
     # Get user's shifts that can have requests (future shifts) for the "Send Request" tab
     my_available_shifts_qs = Training.objects.filter(
         instructor=request.user,
@@ -1137,6 +1144,12 @@ def requests_page(request):
     outgoing_time_off_page = request.GET.get('outgoing_time_off_page', 1)
     outgoing_time_off = outgoing_time_off_paginator.get_page(outgoing_time_off_page)
     
+    # Paginate incoming time off requests (for admins)
+    incoming_time_off_list = list(incoming_time_off_qs[:100])
+    incoming_time_off_paginator = Paginator(incoming_time_off_list, 5)
+    incoming_time_off_page = request.GET.get('incoming_time_off_page', 1)
+    incoming_time_off = incoming_time_off_paginator.get_page(incoming_time_off_page)
+    
     # Pagination for Send Request section
     # Limit to first 100 items for search functionality
     my_available_shifts_list = list(my_available_shifts_qs[:100])
@@ -1152,10 +1165,16 @@ def requests_page(request):
     
     # Get sub-tabs
     shift_sub_tab = request.GET.get('shift_tab', 'incoming')
-    time_off_sub_tab = request.GET.get('time_off_tab', 'sent')
+    # Default to 'incoming' for admins, 'sent' for others
+    if user_profile.role == 'admin':
+        time_off_sub_tab = request.GET.get('time_off_tab', 'incoming')
+    else:
+        time_off_sub_tab = request.GET.get('time_off_tab', 'sent')
     
     # Count pending requests for badge
     pending_count = incoming_shift_requests_qs.count()
+    if user_profile.role == 'admin':
+        pending_count += incoming_time_off_qs.count()
     
     # Handle time off form submission
     form = None
@@ -1176,6 +1195,7 @@ def requests_page(request):
         'outgoing_shift_requests': outgoing_shift_requests,
         'outgoing_cover_offers': outgoing_cover_offers,
         'outgoing_time_off': outgoing_time_off,
+        'incoming_time_off': incoming_time_off,
         'my_available_shifts': my_available_shifts,
         'other_trainers_shifts': other_trainers_shifts,
         'pending_count': pending_count,
@@ -1366,10 +1386,10 @@ def request_time_off(request):
 @never_cache
 @login_required
 def approve_time_off(request, request_id):
-    """Approve a time-off request."""
+    """Approve a time-off request. Only admins can approve."""
     user_profile = request.user.userprofile
-    if user_profile.role not in ['staff', 'admin']:
-        return HttpResponseForbidden("You do not have permission to access this page.")
+    if user_profile.role != 'admin':
+        return HttpResponseForbidden("You do not have permission to access this page. Only admins can approve time-off requests.")
     
     time_off = get_object_or_404(TimeOffRequest, id=request_id)
     
@@ -1389,10 +1409,10 @@ def approve_time_off(request, request_id):
 @never_cache
 @login_required
 def reject_time_off(request, request_id):
-    """Reject a time-off request."""
+    """Reject a time-off request. Only admins can reject."""
     user_profile = request.user.userprofile
-    if user_profile.role not in ['staff', 'admin']:
-        return HttpResponseForbidden("You do not have permission to access this page.")
+    if user_profile.role != 'admin':
+        return HttpResponseForbidden("You do not have permission to access this page. Only admins can reject time-off requests.")
     
     time_off = get_object_or_404(TimeOffRequest, id=request_id)
     
@@ -1579,6 +1599,73 @@ def my_shifts(request):
         my_shifts_list = []
         all_trainers_shifts_list = []
     
+    # Get all staff members' availability
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    from apps.profiles.models import UserProfile
+    staff_users = User.objects.filter(userprofile__role='staff').select_related('userprofile')
+    
+    # Get availability for all staff members
+    all_availability = Availability.objects.filter(
+        user__in=staff_users
+    ).select_related('user').order_by('user__username', 'day_of_week', 'start_time')
+    
+    # Get approved time off requests for all staff members
+    today = timezone.localdate()
+    approved_time_off = TimeOffRequest.objects.filter(
+        user__in=staff_users,
+        status='approved',
+        end_date__gte=today  # Only show future or current time off
+    ).select_related('user').order_by('user__username', 'start_date')
+    
+    # Organize availability by user
+    availability_by_user = {}
+    for avail in all_availability:
+        username = avail.user.get_full_name() or avail.user.username
+        if username not in availability_by_user:
+            availability_by_user[username] = {
+                'recurring': [],
+                'time_off': []
+            }
+        availability_by_user[username]['recurring'].append({
+            'day': avail.get_day_of_week_display(),
+            'day_num': avail.day_of_week,
+            'start_time': avail.start_time.strftime("%H:%M"),
+            'end_time': avail.end_time.strftime("%H:%M"),
+            'is_available': avail.is_available,
+            'type': 'recurring'
+        })
+    
+    # Add time off requests to availability
+    for time_off in approved_time_off:
+        username = time_off.user.get_full_name() or time_off.user.username
+        if username not in availability_by_user:
+            availability_by_user[username] = {
+                'recurring': [],
+                'time_off': []
+            }
+        
+        # Format time off display
+        time_off_display = {
+            'start_date': time_off.start_date,
+            'end_date': time_off.end_date,
+            'start_time': time_off.start_time.strftime("%H:%M") if time_off.start_time else None,
+            'end_time': time_off.end_time.strftime("%H:%M") if time_off.end_time else None,
+            'reason': time_off.reason,
+            'type': 'time_off'
+        }
+        availability_by_user[username]['time_off'].append(time_off_display)
+    
+    # Get current user's availability
+    my_availability = Availability.objects.filter(user=request.user).order_by('day_of_week', 'start_time')
+    
+    # Get current user's approved time off
+    my_time_off = TimeOffRequest.objects.filter(
+        user=request.user,
+        status='approved',
+        end_date__gte=today
+    ).order_by('start_date')
+    
     return render(request, "dashboard/my_shifts.html", {
         "user_profile": user_profile,
         "my_shifts": my_shifts_list,
@@ -1589,4 +1676,7 @@ def my_shifts(request):
         "filter_mode": filter_mode,
         "my_shifts_json": my_shifts_json,
         "all_trainers_shifts_json": all_trainers_shifts_json,
+        "availability_by_user": availability_by_user,
+        "my_availability": my_availability,
+        "my_time_off": my_time_off,
     })

@@ -248,6 +248,219 @@
       </div>
     </div>
   </div>
+
+  <!-- Availability Section -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold mb-0">Availability</h2>
+        <a href="{% url 'dashboard:manage_availability' %}" class="btn btn-warning btn-sm">
+          Manage My Availability
+        </a>
+      </div>
+      
+      <!-- My Availability -->
+      <div class="mb-4">
+        <h6 class="fw-semibold mb-2">My Recurring Availability</h6>
+        {% if my_availability %}
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-borderless mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Day</th>
+                  <th scope="col">Time</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for avail in my_availability %}
+                  <tr>
+                    <td>{{ avail.get_day_of_week_display }}</td>
+                    <td>{{ avail.start_time|time:"P" }} - {{ avail.end_time|time:"P" }}</td>
+                    <td>
+                      {% if avail.is_available %}
+                        <span class="badge bg-success">Available</span>
+                      {% else %}
+                        <span class="badge bg-danger">Unavailable</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-3 small">No recurring availability patterns set. <a href="{% url 'dashboard:manage_availability' %}">Set your availability</a></p>
+        {% endif %}
+        
+        <!-- My Time Off -->
+        {% if my_time_off %}
+          <h6 class="fw-semibold mb-2 mt-3">My Approved Time Off</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-borderless mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Date Range</th>
+                  <th scope="col">Time</th>
+                  <th scope="col">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for time_off in my_time_off %}
+                  <tr>
+                    <td class="fw-semibold">
+                      {% if time_off.start_date == time_off.end_date %}
+                        {{ time_off.start_date|date:"M j, Y" }}
+                      {% else %}
+                        {{ time_off.start_date|date:"M j" }} - {{ time_off.end_date|date:"M j, Y" }}
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if time_off.start_time and time_off.end_time %}
+                        {{ time_off.start_time|time:"P" }} - {{ time_off.end_time|time:"P" }}
+                      {% else %}
+                        <span class="text-muted">All day</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if time_off.reason %}
+                        <span class="text-muted small">{{ time_off.reason|truncatewords:10 }}</span>
+                      {% else %}
+                        <span class="text-muted small">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+      
+      <!-- All Staff Availability -->
+      <div>
+        <h6 class="fw-semibold mb-2">All Staff Availability</h6>
+        {% if availability_by_user %}
+          <p class="text-muted small mb-3">Click on a staff member's name to view their availability patterns and time off ({{ availability_by_user|length }} staff member{{ availability_by_user|length|pluralize }}).</p>
+          <div class="accordion accordion-flush" id="availabilityAccordion">
+            {% for username, user_data in availability_by_user.items %}
+              {% with recurring_count=user_data.recurring|length %}
+                {% with time_off_count=user_data.time_off|length %}
+                  {% with total_count=recurring_count|add:time_off_count %}
+              <div class="accordion-item border rounded mb-2">
+                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                          data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" 
+                          aria-controls="collapse{{ forloop.counter }}">
+                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                      <strong>{{ username }}</strong>
+                      <div>
+                        {% if recurring_count > 0 %}
+                          <span class="badge bg-secondary">{{ recurring_count }} recurring</span>
+                        {% endif %}
+                        {% if time_off_count > 0 %}
+                          <span class="badge bg-warning text-dark ms-1">{{ time_off_count }} time off</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </button>
+                </h2>
+                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" 
+                     aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#availabilityAccordion">
+                  <div class="accordion-body p-3 bg-light">
+                    <!-- Recurring Availability -->
+                    {% if user_data.recurring %}
+                      <h6 class="fw-semibold mb-2 mt-0">Recurring Availability</h6>
+                      <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover mb-0 bg-white">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">Day</th>
+                              <th scope="col">Time</th>
+                              <th scope="col">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for avail in user_data.recurring %}
+                              <tr>
+                                <td class="fw-semibold">{{ avail.day }}</td>
+                                <td>{{ avail.start_time }} - {{ avail.end_time }}</td>
+                                <td>
+                                  {% if avail.is_available %}
+                                    <span class="badge bg-success">Available</span>
+                                  {% else %}
+                                    <span class="badge bg-danger">Unavailable</span>
+                                  {% endif %}
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    {% endif %}
+                    
+                    <!-- Time Off Requests -->
+                    {% if user_data.time_off %}
+                      <h6 class="fw-semibold mb-2 {% if user_data.recurring %}mt-3{% else %}mt-0{% endif %}">Time Off</h6>
+                      <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 bg-white">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">Date Range</th>
+                              <th scope="col">Time</th>
+                              <th scope="col">Reason</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for time_off in user_data.time_off %}
+                              <tr>
+                                <td class="fw-semibold">
+                                  {% if time_off.start_date == time_off.end_date %}
+                                    {{ time_off.start_date|date:"M j, Y" }}
+                                  {% else %}
+                                    {{ time_off.start_date|date:"M j" }} - {{ time_off.end_date|date:"M j, Y" }}
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  {% if time_off.start_time and time_off.end_time %}
+                                    {{ time_off.start_time }} - {{ time_off.end_time }}
+                                  {% else %}
+                                    <span class="text-muted">All day</span>
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  {% if time_off.reason %}
+                                    <span class="text-muted small">{{ time_off.reason|truncatewords:10 }}</span>
+                                  {% else %}
+                                    <span class="text-muted small">—</span>
+                                  {% endif %}
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    {% endif %}
+                    
+                    {% if not user_data.recurring and not user_data.time_off %}
+                      <p class="text-muted mb-0 small">No availability patterns or time off set.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+                  {% endwith %}
+                {% endwith %}
+              {% endwith %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info mb-0">
+            <p class="mb-0 small">No staff members have set their availability yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Shift Detail Modal -->

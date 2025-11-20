@@ -479,6 +479,13 @@
     <div class="tab-pane fade {% if main_tab == 'time_off_requests' %}show active{% endif %}" id="time-off-requests" role="tabpanel">
       <!-- Sub-tabs for Time Off Requests -->
       <ul class="nav nav-tabs mb-3" id="timeOffRequestsSubTabs" role="tablist">
+        {% if user_profile.role == 'admin' %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link {% if time_off_sub_tab == 'incoming' %}active{% endif %}" id="incoming-time-off-tab" data-bs-toggle="tab" data-bs-target="#incoming-time-off" type="button" role="tab" data-sub-tab="incoming">
+            Incoming Requests
+          </button>
+        </li>
+        {% endif %}
         <li class="nav-item" role="presentation">
           <button class="nav-link {% if time_off_sub_tab == 'sent' %}active{% endif %}" id="sent-time-off-tab" data-bs-toggle="tab" data-bs-target="#sent-time-off" type="button" role="tab" data-sub-tab="sent">
             Sent Requests
@@ -492,6 +499,86 @@
       </ul>
 
       <div class="tab-content" id="timeOffRequestsSubTabContent">
+        <!-- Incoming Time Off Requests (Admin Only) -->
+        {% if user_profile.role == 'admin' %}
+        <div class="tab-pane fade {% if time_off_sub_tab == 'incoming' %}show active{% endif %}" id="incoming-time-off" role="tabpanel" data-pagination-section="incoming_time_off_page">
+          <div class="mb-3">
+            <input type="text" class="form-control" id="search-incoming-time-off" placeholder="Search incoming time off requests..." data-search-target="incoming-time-off">
+          </div>
+          {% if incoming_time_off %}
+            {% for req in incoming_time_off %}
+              <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title">
+                    Time-Off Request
+                    <span class="badge bg-warning text-dark ms-2">{{ req.status }}</span>
+                  </h6>
+                  <p class="card-text mb-1">
+                    <strong>Requested by:</strong> {{ req.user.get_full_name|default:req.user.username }}<br>
+                    <strong>Dates:</strong> {{ req.start_date|date:"M j, Y" }} - {{ req.end_date|date:"M j, Y" }}<br>
+                    {% if req.start_time %}
+                      <strong>Time:</strong> {{ req.start_time|time:"P" }} - {{ req.end_time|time:"P" }}<br>
+                    {% endif %}
+                  </p>
+                  {% if req.reason %}
+                    <p class="text-muted mb-2"><em>{{ req.reason }}</em></p>
+                  {% endif %}
+                  {% if req.status == 'pending' %}
+                    <div class="d-flex gap-2">
+                      <form method="post" action="{% url 'dashboard:approve_time_off' req.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                      </form>
+                      <a href="{% url 'dashboard:reject_time_off' req.id %}" class="btn btn-danger btn-sm">Reject</a>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+            <!-- Pagination -->
+            {% if incoming_time_off.has_other_pages %}
+              <nav aria-label="Incoming time-off requests pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+                  {% if incoming_time_off.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?main_tab=time_off_requests&time_off_tab=incoming&incoming_time_off_page=1">First</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">First</span>
+                    </li>
+                  {% endif %}
+                  
+                  {% for num in incoming_time_off.paginator.page_range %}
+                    {% if incoming_time_off.number == num %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% elif num > incoming_time_off.number|add:'-3' and num < incoming_time_off.number|add:'3' %}
+                      <li class="page-item">
+                        <a class="page-link" href="?main_tab=time_off_requests&time_off_tab=incoming&incoming_time_off_page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                  
+                  {% if incoming_time_off.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?main_tab=time_off_requests&time_off_tab=incoming&incoming_time_off_page={{ incoming_time_off.paginator.num_pages }}">Last</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled">
+                      <span class="page-link">Last</span>
+                    </li>
+                  {% endif %}
+                </ul>
+              </nav>
+            {% endif %}
+          {% else %}
+            <p class="text-muted text-center py-5">No incoming time-off requests</p>
+          {% endif %}
+        </div>
+        {% endif %}
+        
         <!-- Sent Time Off Requests -->
         <div class="tab-pane fade {% if time_off_sub_tab == 'sent' %}show active{% endif %}" id="sent-time-off" role="tabpanel" data-pagination-section="outgoing_time_off_page">
           <div class="mb-3">
@@ -652,6 +739,7 @@
     setupSearch('search-sent-shift', 'sent-shift');
     setupSearch('search-send-shift', 'send-shift');
     setupSearch('search-offer-shift', 'offer-shift');
+    setupSearch('search-incoming-time-off', 'incoming-time-off');
     setupSearch('search-sent-time-off', 'sent-time-off');
   });
   // List of all pagination parameters to preserve
