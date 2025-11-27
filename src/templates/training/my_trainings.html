@@ -86,53 +86,17 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">3D Printing Training</h4>
           {% with unlock=level_unlocks|dict_get:"3d_printing" %}
-          <ul class="list-unstyled" id="levelList3D" style="cursor: pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="3d-level1"
-                data-category="3d_printing"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Training
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="3d-level2a"
-                data-category="3d_printing"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 High-Detail Resin
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="3d-level2b"
-                data-category="3d_printing"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Multi-Material
-            </li>
-            {% endwith %}
-            {% with level3=unlock.levels.level3 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
-                data-target="3d-level3"
-                data-category="3d_printing"
-                data-level="{{ level3.number }}"
-                data-locked="{{ level3.locked|yesno:'true,false' }}"
-                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 3 Training
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelList3D" style="cursor: pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="3d-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2a">Level 2 High-Detail Resin</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level2b">Level 2 Multi-Material</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="3d-level3">Level 3 Training</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
         <div class="col-md-9">
+
           <!-- Level 1 -->
           <div id="3d-level1" class="training-level active">
             <h5 class="fw-bold mb-3">Lvl 1 – Intro to 3D Printing Training</h5>
@@ -143,39 +107,40 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Want to learn the basics of 3D printing? Our Level 1 FDM (Fused Deposition Modeling) training does just that!  
                     Learn to operate our Bambu A1 Mini 3D printers and begin printing using plastic filament (provided by The Hatchery).
                   </p>
-
-                  <p>
-                    After completing <em>this training</em> and earning 3 stamps, users can then sign up for Level 2 trainings:
-                  </p>
-
+                  <p>After completing <em>this training</em> and earning 3 stamps, users can then sign up for Level 2 trainings:</p>
                   <ul class="mb-3">
                     <li><strong>Lvl 2 Multi-Material 3D Printing</strong> – trains you to use the multi-filament Bambu FDM printers.</li>
                     <li><strong>Lvl 2 High-Detail 3D Printing</strong> – trains you to use the SLA resin printers.</li>
                   </ul>
-
-                  <p>
-                    The Lvl 3 trainings include <strong>Photo-Realistic 3D Printing</strong> with the Stratasys J55 full-color PolyJet printer.
-                  </p>
-
-                  <p><strong>Prerequisite:</strong> Makerspace Orientation Required – <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
+                  <p>The Lvl 3 trainings include <strong>Photo-Realistic 3D Printing</strong> with the Stratasys J55 full-color PolyJet printer.</p>
+                  <p><strong>Prerequisite:</strong> Makerspace Orientation Required –
+                    <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
                 </div>
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -190,15 +155,12 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     SLA printing is a resin-based 3D printing process! Create highly-detailed prints with our FormLabs and Prusa SLA printers.  
                     Users will learn how to safely handle liquid resin, how to run the printer, and correct after-care for SLA prints.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>3D Printing Level 1 Training – Prusa Mini (3 stamps)</li>
@@ -208,11 +170,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -227,15 +199,12 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Take FDM printing to the next level! Our Bambu Labs 3D printers are capable of larger 3D prints, 
                     printing in multiple colors, and significantly faster printing too.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>3D Printing Level 1 Training – Prusa Mini (3 stamps)</li>
@@ -245,11 +214,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -264,20 +243,18 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Want to bring your photorealistic 3D models to life? Our Level 3 Stratasys (Photo-Realistic) Printer training does just that!  
                     Learn to operate the Stratasys 3D Printer and create hyperrealistic objects.  
                     In this training, you will learn how to 3D scan something, edit your scan in Blender, 
                     and 3D print it on the Stratasys PolyJet printer.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
-                    <li>Makerspace Orientation Required – <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a></li>
+                    <li>Makerspace Orientation Required –
+                      <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a></li>
                     <li>Lvl 1 – Intro to 3D Printing</li>
                     <li>Lvl 2 – High-Detail 3D Printing</li>
                     <li>Lvl 2 – Multi-Material 3D Printing</li>
@@ -286,51 +263,44 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level3.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
+
         </div>
+        {% endwith %}
       </div>
     </div>
 
     <!-- Textile Training -->
     <div class="training-card shadow-sm rounded p-4" style="background-color:#f7f4ee;">
       <div class="row">
+        <!-- LEFT COLUMN -->
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Textile Training</h4>
           {% with unlock=level_unlocks|dict_get:"textile" %}
-          <ul class="list-unstyled" id="levelListTextile" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="textile-level1"
-                data-category="textile"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Training
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="textile-level2"
-                data-category="textile"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Training
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListTextile" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="textile-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="textile-level2">Level 2 Training</li>
           </ul>
-          {% endwith %}
         </div>
 
+        <!-- RIGHT COLUMN -->
         <div class="col-md-9">
           <!-- Level 1 -->
           <div id="textile-level1" class="training-level active">
@@ -342,15 +312,12 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Sewing is one of the most versatile skills The Hatchery offers! Users will learn how to thread a sewing machine, 
                     wind a bobbin, and create a small sewing project to take home.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required –
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -358,11 +325,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -377,17 +354,14 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Take your favorite designs and translate them onto your clothes!  
                     In this Level 2 training, users will digitize designs into stitch paths 
                     (using Adobe Illustrator and DesignShop software), learn how to operate 
                     our Bernina Embroidery Machine, and leave with an embroidered patch.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a></li>
@@ -397,15 +371,27 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
+
+        {% endwith %}
       </div>
     </div>
 
@@ -416,39 +402,11 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Laser Cutter Training</h4>
           {% with unlock=level_unlocks|dict_get:"laser" %}
-          <ul class="list-unstyled" id="levelListLaser" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="laser-level1"
-                data-category="laser"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Training
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="laser-level2a"
-                data-category="laser"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Rotary
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="laser-level2b"
-                data-category="laser"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 UV
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListLaser" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="laser-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2a">Level 2 Rotary</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="laser-level2b">Level 2 UV</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -463,16 +421,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     The possibilities are endless with laser cutting!  
                     Our Level 1 laser cutting training introduces users to our Trotec laser cutters, 
                     teaches basic Adobe Illustrator functions, and shows users how to cut and engrave a variety of supplied materials.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required –
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -480,11 +435,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -499,15 +464,12 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Engraving onto a curved surface? Use our Level 2 rotary cutter attachment for the Trotec laser cutters!  
                     Users can engrave their designs onto approved glassware and non-painted items, expanding what’s possible with laser cutting.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a></li>
@@ -517,11 +479,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -536,16 +508,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Through an ultraviolet (UV) light ink curing process, our Roland UV Printer can print color images onto almost any surface.  
                     From creating copies of your favorite record covers to printing a family portrait, users will learn how to UV print onto acrylic material 
                     and other approved substrates.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a></li>
@@ -555,15 +524,26 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
+        {% endwith %}
       </div>
     </div>
 
@@ -574,51 +554,17 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Vinyl & Screen Printing Training</h4>
           {% with unlock=level_unlocks|dict_get:"vinyl_screen" %}
-          <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="vinyl-level1a"
-                data-category="vinyl_screen"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 – Basics
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
-                data-target="vinyl-level1b"
-                data-category="vinyl_screen"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 – Screen Printing
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="vinyl-level2a"
-                data-category="vinyl_screen"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 – Garment
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="vinyl-level2b"
-                data-category="vinyl_screen"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 – Sticker
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListVinyl" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="vinyl-level1a">Level 1 – Basics</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level1b">Level 1 – Screen Printing</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2a">Level 2 – Garment</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="vinyl-level2b">Level 2 – Sticker</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
         <div class="col-md-9">
+
           <!-- Level 1 Basics -->
           <div id="vinyl-level1a" class="training-level active">
             <h5 class="fw-bold mb-3">Lvl 1 – Vinyl Cutting Basics Training</h5>
@@ -629,14 +575,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Create stickers for shirts and signs! The Hatchery has lots of different sign and apparel vinyl for users to choose from. This training teaches users how to cut and “weed”-out their designs, as well as how to apply their stickers!
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required –
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -644,11 +587,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -663,14 +616,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Learn to use our screen printing setup with water-based inks, including making a screen with a hand-cut stencil, another with a photo-stencil, and print with two colors! We recommend wearing short sleeves/non-bulky shirts to avoid ink staining. You will be given an apron to wear for the duration of the training.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required – 
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -678,11 +628,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -697,16 +657,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Print long-lasting designs in full-color (plus white ink) onto new cotton-based materials, such as t-shirts or sweatshirts!  
                     Student Trainers will teach users how to pre-treat their garment, print their custom design, and use the heat press to cure the image.  
                     Please note that <strong>printing onto used clothing is prohibited.</strong>
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -718,11 +675,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -737,17 +704,14 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Want to make stickers for your water bottle? Maybe for your club?  
                     The Hatchery’s Roland Sticker Printer can do it!  
                     Users will learn how to print on both opaque and clear adhesive materials,  
                     and take advantage of the printer’s white ink for detailed, durable stickers.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -759,15 +723,27 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
+
+        {% endwith %}
       </div>
     </div>
 
@@ -778,65 +754,14 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Woodworking Training</h4>
           {% with unlock=level_unlocks|dict_get:"woodworking" %}
-          <ul class="list-unstyled" id="levelListWood" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="wood-level1"
-                data-category="woodworking"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Training
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="wood-level2a"
-                data-category="woodworking"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 CNC
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="wood-level2b"
-                data-category="woodworking"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Intermediate
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="wood-level2c"
-                data-category="woodworking"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Chisel
-            </li>
-            {% endwith %}
-            {% with level3=unlock.levels.level3 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
-                data-target="wood-level3a"
-                data-category="woodworking"
-                data-level="{{ level3.number }}"
-                data-locked="{{ level3.locked|yesno:'true,false' }}"
-                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 3 Advanced
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
-                data-target="wood-level3b"
-                data-category="woodworking"
-                data-level="{{ level3.number }}"
-                data-locked="{{ level3.locked|yesno:'true,false' }}"
-                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 3 Lathe
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListWood" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="wood-level1">Level 1 Training</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2a">Level 2 CNC</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2b">Level 2 Intermediate</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level2c">Level 2 Chisel</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3a">Level 3 Advanced</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="wood-level3b">Level 3 Lathe</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -852,14 +777,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Seen the tool walls in Hatch Back and APS? Our Hand Tools training familiarizes users with a variety of saws, hammers, and drills and drivers! This is a Level 1 training that is required for the Woodworking I training.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required – 
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -867,11 +789,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -886,19 +818,15 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     The CNC Router is a computer-controlled cutting machine that can cut wood, composites, plastic, and foam. Any projects made with the CNC Router require having a 3D file (CAD - Computer Aided Design) and set of defined toolpaths (CAM - Computer Aided Manufacturing).
                   </p>
-
                   <p><strong>CAD for CNC Router credential is required to unlock this training.</strong><br>
                     To acquire the credential, please fill out this form:  
                     <a href="https://forms.gle/C6JqF77W66nQvwjK8" target="_blank">https://forms.gle/C6JqF77W66nQvwjK8</a>
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -912,11 +840,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -931,14 +869,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 316 (Enter through 301)</p>
-
                   <p><strong>Information:</strong>  
                     The world of woodworking expands with our Level 2 Woodworking I training! This training shows users how to safely use a Miter Saw, Band Saw, Drill Press, and Sander.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -950,11 +885,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -969,14 +914,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 316 (Enter through 301)</p>
-
                   <p><strong>Information:</strong>  
                     The world of woodworking expands with our Level 2 Woodworking I training! This training shows users how to safely use a Miter Saw, Band Saw, Drill Press, and Sander.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -1005,14 +947,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     The world of woodworking expands with our Level 3 Woodworking training! This training shows users how to safely use a Table Saw, Table Router, and Planer.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -1025,11 +964,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level3.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -1044,14 +993,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Shop – 245 Beacon St., Room 316</p>
-
                   <p><strong>Information:</strong>  
                     The world of woodworking expands with our Level 3 Wood Lathe training! This training shows users how to safely use a wood lathe and techniques for turning wood “between centers.”
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required – 
@@ -1071,6 +1017,8 @@
             </div>
           </div>
         </div>
+
+        {% endwith %}
       </div>
     </div>
 
@@ -1081,39 +1029,11 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Electronics Training</h4>
           {% with unlock=level_unlocks|dict_get:"electronics" %}
-          <ul class="list-unstyled" id="levelListElectronics" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="electronics-level1a"
-                data-category="electronics"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Circuitry
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
-                data-target="electronics-level1b"
-                data-category="electronics"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Soldering
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="electronics-level2"
-                data-category="electronics"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Training
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListElectronics" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="electronics-level1a">Level 1 Circuitry</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level1b">Level 1 Soldering</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="electronics-level2">Level 2 Training</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -1128,16 +1048,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Design and build basic circuits in this beginner-friendly electronics training!  
                     Student Trainers will guide users step-by-step through the creation of simple circuits, while introducing coding using Arduino software.  
                     Whether you’re completely new or have prior experience, this training makes electronics fun and approachable for all skill levels.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required –  
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -1145,11 +1062,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -1164,16 +1091,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Join this hands-on training to learn the essentials of soldering!  
                     Student Trainers will guide you through techniques for connecting wires, joining components, and repairing small electronics safely and effectively.  
                     Strengthen your projects with reliable, professional solder joints while mastering tool care and best practices.
                   </p>
-
                   <p><strong>Prerequisite:</strong> Makerspace Orientation Required –  
                     <a href="https://bit.ly/hatcheryorientation" target="_blank">bit.ly/hatcheryorientation</a>
                   </p>
@@ -1181,11 +1105,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -1200,16 +1134,13 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Makerspace – 245 Beacon St., Room 203</p>
-
                   <p><strong>Information:</strong>  
                     Take your electronics projects to the next level with Circuitry 2!  
                     This training builds upon the foundations of Level 1 by teaching users how to design, prototype, and troubleshoot more complex circuits using breadboards and Arduino microcontrollers.  
                     You’ll also explore real-world circuit logic and component integration for creative and practical builds.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required –  
@@ -1221,15 +1152,27 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level2.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
+
+        {% endwith %}
       </div>
     </div>
 
@@ -1240,49 +1183,12 @@
         <div class="col-md-3 border-end">
           <h4 class="fw-bold mb-3 training-title">Metalworking Training</h4>
           {% with unlock=level_unlocks|dict_get:"metalworking" %}
-          <ul class="list-unstyled" id="levelListMetal" style="cursor:pointer;"
-              data-level1-completed="{{ unlock.level1_completed|yesno:'true,false' }}"
-              data-level2-completed="{{ unlock.level2_completed|yesno:'true,false' }}">
-            {% with level1=unlock.levels.level1 %}
-            <li class="py-2 px-3 mb-1 rounded active-level {% if level1.locked %}level-locked{% endif %}"
-                data-target="metal-level1a"
-                data-category="metalworking"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Waterjet
-            </li>
-            <li class="py-2 px-3 mb-1 rounded {% if level1.locked %}level-locked{% endif %}"
-                data-target="metal-level1b"
-                data-category="metalworking"
-                data-level="{{ level1.number }}"
-                data-locked="{{ level1.locked|yesno:'true,false' }}"
-                {% if level1.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 1 Machining
-            </li>
-            {% endwith %}
-            {% with level2=unlock.levels.level2 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level2.locked %}level-locked{% endif %}"
-                data-target="metal-level2a"
-                data-category="metalworking"
-                data-level="{{ level2.number }}"
-                data-locked="{{ level2.locked|yesno:'true,false' }}"
-                {% if level2.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 2 Conversational
-            </li>
-            {% endwith %}
-            {% with level3=unlock.levels.level3 %}
-            <li class="py-2 px-3 mb-1 rounded {% if level3.locked %}level-locked{% endif %}"
-                data-target="metal-level2b"
-                data-category="metalworking"
-                data-level="{{ level3.number }}"
-                data-locked="{{ level3.locked|yesno:'true,false' }}"
-                {% if level3.locked %}title="Complete the previous level to unlock this training." aria-disabled="true"{% endif %}>
-              Level 3 CAM
-            </li>
-            {% endwith %}
+          <ul class="list-unstyled" id="levelListMetal" style="cursor:pointer;">
+            <li class="py-2 px-3 mb-1 rounded active-level" data-target="metal-level1a">Level 1 Waterjet</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level1b">Level 1 Machining</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2a">Level 2 Conversational</li>
+            <li class="py-2 px-3 mb-1 rounded" data-target="metal-level2b">Level 3 CAM</li>
           </ul>
-          {% endwith %}
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -1298,15 +1204,12 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     Learn how to use the ProtoMAX Waterjet Cutter to create precise parts out of metal, plastic, and other materials using high-pressure water mixed with abrasive grit.  
                     This Level 1 training covers setup, safety, and file preparation, enabling users to cut designs created in CAD software with accuracy and confidence.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required –  
@@ -1318,11 +1221,21 @@
               </div>
 
               <div class="col-md-4 d-flex flex-column gap-2">
-                <a href="{% url 'dashboard:training_reserve' %}" 
-                  class="btn text-white" 
-                  style="background-color:#c9a64d;">
-                  Reserve Training
-                </a>
+                {% if unlock.levels.level1.locked %}
+                  <a class="btn text-white"
+                    style="background-color:#6c757d; cursor:not-allowed; position:relative; text-decoration:none;"
+                    title="Complete the previous level to unlock this training."
+                    onmouseover="this.innerHTML='Reserve Training';"
+                    onmouseout="this.innerHTML='Reserve Training';">
+                    Reserve Training
+                  </a>
+                {% else %}
+                  <a href="{% url 'dashboard:training_reserve' %}"
+                    class="btn text-white"
+                    style="background-color:#c9a64d;">
+                    Reserve Training
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -1337,14 +1250,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     In development.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required –  
@@ -1374,14 +1284,11 @@
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
 
-                <!-- Details Section -->
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
-
                   <p><strong>Information:</strong>  
                     In development.
                   </p>
-
                   <p><strong>Prerequisites:</strong></p>
                   <ul>
                     <li>Makerspace Orientation Required –  
@@ -1409,6 +1316,7 @@
                     alt="Lvl 3 – CAM Programming Training (In Development)"
                     class="rounded shadow-sm w-100"
                     style="height:auto;max-height:300px;object-fit:contain;opacity:0.8;filter:grayscale(0.3);" />
+
                 <div class="mt-3">
                   <p><strong>Location:</strong> The Hatchery Prototyping Studio – 245 Beacon St., Room 301</p>
                   <p><strong>Information:</strong>  
@@ -1428,6 +1336,8 @@
             </div>
           </div>
         </div>
+
+        {% endwith %}
       </div>
     </div>
 
