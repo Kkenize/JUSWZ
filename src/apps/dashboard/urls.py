@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.landing_page, name='landing'),
     path('redirect/', views.dashboard_redirect, name='home'),
     path('student/', views.student_dashboard, name='student'),
+    path('collaborator/', views.collaborator_dashboard, name='collaborator'),
     path('staff/', views.staff_dashboard, name='staff'),
     path('admin/', views.admin_dashboard, name='admin'),
 

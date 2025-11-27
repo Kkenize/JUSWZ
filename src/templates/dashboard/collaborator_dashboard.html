@@ -1,0 +1,71 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Collaborator Dashboard - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="mb-4">
+        <h1 class="display-4 fw-bold">Welcome, Collaborator!</h1>
+        <p class="lead text-muted">Here's your workspace for trainings, tools, and collaborations.</p>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row g-4">
+        <!-- My Trainings -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">My Trainings</h3>
+                <p class="text-muted mb-4">{{ reserved_trainings_count }} Trainings reserved</p>
+                <a href="{% url 'dashboard:my_trainings' %}" class="btn btn-bc-gold">View Trainings</a>
+            </div>
+        </div>
+
+        <!-- Tool Access -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Tool Access</h3>
+                <p class="text-muted mb-4">Browse and manage tool permissions</p>
+                <a href="#" class="btn btn-bc-gold">Browse Tools</a>
+            </div>
+        </div>
+
+        <!-- Certifications -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">My Certifications</h3>
+                <p class="text-muted mb-4">View and track your certifications</p>
+                <a href="#" class="btn btn-bc-gold">View Certificates</a>
+            </div>
+        </div>
+
+        <!-- Reservations -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">My Reservations</h3>
+                <p class="text-muted mb-4">Manage workspace and lab bookings</p>
+                <a href="#" class="btn btn-bc-gold">Manage Bookings</a>
+            </div>
+        </div>
+
+        <!-- Reports -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Report Issue</h3>
+                <p class="text-muted mb-4">Report project or equipment issues</p>
+                <a href="#" class="btn btn-bc-gold">Submit Report</a>
+            </div>
+        </div>
+
+        <!-- Help -->
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100 p-4">
+                <h3 class="h5 fw-bold mb-3">Help & Support</h3>
+                <p class="text-muted mb-4">Need assistance? Get help here</p>
+                <a href="{% url 'dashboard:help' %}" class="btn btn-bc-gold">Get Help</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -38,6 +38,8 @@ def dashboard_redirect(request):
         return redirect('dashboard:admin')
     elif user_profile.role == 'staff':
         return redirect('dashboard:staff')
+    elif user_profile.role == 'collaborator':
+        return redirect('dashboard:collaborator')
     else:
         return redirect('dashboard:student')
 
@@ -53,7 +55,17 @@ def student_dashboard(request):
         "user_profile": user_profile,
         "reserved_trainings_count": request.user.enrolled_trainings.filter(date__gte=timezone.localdate()).count(),
     })
-
+    
+@never_cache
+@login_required
+def collaborator_dashboard(request):
+    """Collaborator-only dashboard"""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'collaborator':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    return render(request, 'dashboard/collaborator_dashboard.html', {
+        "user_profile": user_profile
+    })
 
 @never_cache
 @login_required
@@ -541,7 +553,7 @@ def my_trainings(request):
     user_profile = request.user.userprofile
 
     # Only students should access this view
-    if user_profile.role != 'student':
+    if user_profile.role not in ['student', 'collaborator']:
         return HttpResponseForbidden("You do not have permission to access this page.")
 
     today = timezone.localdate()
@@ -583,7 +595,7 @@ def training_reserve(request):
     """Student training reservation calendar with prerequisite gating."""
 
     user_profile = request.user.userprofile
-    if user_profile.role != 'student':
+    if user_profile.role not in ['student', 'collaborator']:
         return HttpResponseForbidden("You do not have permission to access this page.")
 
     if request.method == 'POST':

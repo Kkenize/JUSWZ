@@ -21,17 +21,13 @@
 
                 <!-- Student Dashboard (only for students) -->
                 {% if user_profile.role == 'student' %}
-                <a href="{% url 'dashboard:student' %}" class="nav-link">Student Dashboard</a>
-                {% endif %}
-
-                <!-- Staff Dashboard (only for staff) -->
-                {% if user_profile.role == 'staff' %}
-                <a href="{% url 'dashboard:staff' %}" class="nav-link">Staff Dashboard</a>
-                {% endif %}
-
-                <!-- Admin Dashboard (only for admins) -->
-                {% if user_profile.role == 'admin' %}
-                <a href="{% url 'dashboard:admin' %}" class="nav-link">Admin Dashboard</a>
+                    <a href="{% url 'dashboard:student' %}" class="nav-link">Student Dashboard</a>
+                {% elif user_profile.role == 'collaborator' %}
+                    <a href="{% url 'dashboard:collaborator' %}" class="nav-link">Collaborator Dashboard</a>
+                {% elif user_profile.role == 'staff' %}
+                    <a href="{% url 'dashboard:staff' %}" class="nav-link">Staff Dashboard</a>
+                {% elif user_profile.role == 'admin' %}
+                    <a href="{% url 'dashboard:admin' %}" class="nav-link">Admin Dashboard</a>
                 {% endif %}
 
                 <!-- Common menu items -->

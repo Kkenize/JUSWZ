@@ -7,8 +7,10 @@
 <div class="container-fluid">
     <!-- Welcome Header -->
     <div class="mb-4">
-        <h1 class="display-4 fw-bold">Welcome, Student!</h1>
-        <p class="lead text-muted">Need some help?.</p>
+        <h1 class="display-4 fw-bold">
+            Welcome, {{ user_profile.role|title }}!
+        </h1>
+        <p class="lead text-muted">Need some help?</p>
     </div>
 
     <!-- Help & Support Content -->
