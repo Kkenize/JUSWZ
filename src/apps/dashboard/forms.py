@@ -71,20 +71,38 @@ class TimeOffRequestForm(forms.ModelForm):
 class AvailabilityForm(forms.ModelForm):
     class Meta:
         model = Availability
-        fields = ['day_of_week', 'start_time', 'end_time', 'is_available']
+        fields = ['day_of_week', 'specific_date', 'start_time', 'end_time', 'is_available']
         widgets = {
             'day_of_week': forms.Select(attrs={'class': 'form-select'}),
+            'specific_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'is_available': forms.CheckboxInput(attrs={'class': 'form-check-input form-check-input-lg', 'role': 'switch'}),
+            'is_available': forms.CheckboxInput(attrs={
+                'class': 'form-check-input form-check-input-lg',
+                'role': 'switch'
+            }),
         }
-    
+
     def clean(self):
         cleaned_data = super().clean()
+        day_of_week = cleaned_data.get('day_of_week')
+        specific_date = cleaned_data.get('specific_date')
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
-        
+
+        # Must choose either recurring or single date
+        if not day_of_week and not specific_date:
+            raise forms.ValidationError(
+                "You must select either a day of the week or a specific date."
+            )
+
+        if day_of_week and specific_date:
+            raise forms.ValidationError(
+                "You cannot select both a day of the week and a specific date."
+            )
+
+        # Time validation
         if start_time and end_time and start_time >= end_time:
             raise forms.ValidationError("End time must be after start time.")
-        
+
         return cleaned_data

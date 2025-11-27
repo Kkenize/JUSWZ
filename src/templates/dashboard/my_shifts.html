@@ -261,7 +261,7 @@
       
       <!-- My Availability -->
       <div class="mb-4">
-        <h6 class="fw-semibold mb-2">My Recurring Availability</h6>
+        <h6 class="fw-semibold mb-2">My Availabilities</h6>
         {% if my_availability %}
           <div class="table-responsive mb-3">
             <table class="table table-sm table-borderless mb-0">
@@ -275,7 +275,13 @@
               <tbody>
                 {% for avail in my_availability %}
                   <tr>
-                    <td>{{ avail.get_day_of_week_display }}</td>
+                    <td>
+                      {% if avail.specific_date %}
+                        {{ avail.specific_date|date:"M d, Y" }}
+                      {% else %}
+                        {{ avail.get_day_of_week_display }}
+                      {% endif %}
+                    </td>
                     <td>{{ avail.start_time|time:"P" }} - {{ avail.end_time|time:"P" }}</td>
                     <td>
                       {% if avail.is_available %}
@@ -383,7 +389,13 @@
                           <tbody>
                             {% for avail in user_data.recurring %}
                               <tr>
-                                <td class="fw-semibold">{{ avail.day }}</td>
+                                <td class="fw-semibold">
+                                  {% if avail.specific_date %}
+                                    {{ avail.specific_date|date:"M d, Y" }}
+                                  {% else %}
+                                    {{ avail.day }}
+                                  {% endif %}
+                                </td>
                                 <td>{{ avail.start_time }} - {{ avail.end_time }}</td>
                                 <td>
                                   {% if avail.is_available %}

@@ -1454,47 +1454,52 @@ def reject_time_off(request, request_id):
         'user_profile': user_profile,
     })
 
-
 @never_cache
 @login_required
 def manage_availability(request):
-    """Manage recurring availability patterns."""
+    """Manage recurring (weekly) and one-time availability patterns."""
     user_profile = request.user.userprofile
     if user_profile.role != 'staff':
         return HttpResponseForbidden("You do not have permission to access this page.")
-    
-    availabilities = Availability.objects.filter(user=request.user).order_by('day_of_week', 'start_time')
-    
+
+    # Fetch both recurring and one-time availabilities, sorted by type/date
+    availabilities = Availability.objects.filter(user=request.user).order_by(
+        'specific_date', 'day_of_week', 'start_time'
+    )
+
     if request.method == 'POST':
-        # Handle form submission for adding/updating availability
         form = AvailabilityForm(request.POST)
         if form.is_valid():
             try:
                 availability = form.save(commit=False)
                 availability.user = request.user
                 availability.save()
-                messages.success(request, "Availability pattern saved.")
-                return redirect('dashboard:my_shifts')
+                messages.success(request, "Availability added successfully.")
+                return redirect('dashboard:manage_availability')
             except ValidationError as e:
                 messages.error(request, f"Error saving availability: {e}")
             except Exception as e:
-                # Handle unique constraint violation
+                # Handle potential duplicates or DB constraint issues
                 if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
-                    messages.error(request, "This availability pattern already exists. Please choose a different day, time, or modify an existing pattern.")
+                    messages.error(
+                        request,
+                        "This availability pattern already exists. Please adjust your selection."
+                    )
                 else:
-                    messages.error(request, "An error occurred while saving availability. Please try again.")
+                    messages.error(request, "An unexpected error occurred while saving availability.")
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error saving availability: {e}", exc_info=True)
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = AvailabilityForm()
-    
+
     return render(request, 'dashboard/manage_availability.html', {
         'form': form,
         'availabilities': availabilities,
         'user_profile': user_profile,
     })
-
 
 @never_cache
 @login_required
@@ -1641,7 +1646,7 @@ def my_shifts(request):
         end_date__gte=today  # Only show future or current time off
     ).select_related('user').order_by('user__username', 'start_date')
     
-    # Organize availability by user
+    # Organize availability by user (includes recurring and one-time)
     availability_by_user = {}
     for avail in all_availability:
         username = avail.user.get_full_name() or avail.user.username
@@ -1650,14 +1655,23 @@ def my_shifts(request):
                 'recurring': [],
                 'time_off': []
             }
+        
+        # Prefer date display if specific_date exists
+        if avail.specific_date:
+            day_display = avail.specific_date.strftime("%b %d, %Y")
+        else:
+            day_display = avail.get_day_of_week_display() or "—"
+
         availability_by_user[username]['recurring'].append({
-            'day': avail.get_day_of_week_display(),
+            'day': day_display,
             'day_num': avail.day_of_week,
+            'specific_date': avail.specific_date,
             'start_time': avail.start_time.strftime("%H:%M"),
             'end_time': avail.end_time.strftime("%H:%M"),
             'is_available': avail.is_available,
-            'type': 'recurring'
+            'type': 'recurring' if not avail.specific_date else 'one_time'
         })
+
     
     # Add time off requests to availability
     for time_off in approved_time_off:

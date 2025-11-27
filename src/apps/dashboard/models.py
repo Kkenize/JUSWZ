@@ -157,7 +157,7 @@ class TimeOffRequest(models.Model):
 
 
 class Availability(models.Model):
-    """Recurring weekly availability patterns for staff members."""
+    """Supports both recurring weekly and one-time availability for staff members."""
     DAY_CHOICES = [
         (0, 'Monday'),
         (1, 'Tuesday'),
@@ -167,25 +167,34 @@ class Availability(models.Model):
         (5, 'Saturday'),
         (6, 'Sunday'),
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='availability_patterns')
-    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+
+    # For recurring weekly patterns
+    day_of_week = models.IntegerField(choices=DAY_CHOICES, null=True, blank=True)
+
+    # For one-time availability
+    specific_date = models.DateField(null=True, blank=True)
+
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name_plural = 'Availabilities'
-        unique_together = ['user', 'day_of_week', 'start_time', 'end_time']
-        ordering = ['day_of_week', 'start_time']
-    
+        unique_together = ['user', 'day_of_week', 'specific_date', 'start_time', 'end_time']
+        ordering = ['day_of_week', 'specific_date', 'start_time']
+
     def __str__(self):
-        day_name = dict(self.DAY_CHOICES)[self.day_of_week]
+        if self.specific_date:
+            label = self.specific_date.strftime("%b %d, %Y")
+        else:
+            label = dict(self.DAY_CHOICES).get(self.day_of_week, "Unknown Day")
         status = "Available" if self.is_available else "Unavailable"
-        return f"{self.user.username} - {day_name} {self.start_time}-{self.end_time} ({status})"
+        return f"{self.user.username} - {label} {self.start_time}-{self.end_time} ({status})"
 
 
 def create_google_calendar_event(user, training, *, save_event_id=True):
