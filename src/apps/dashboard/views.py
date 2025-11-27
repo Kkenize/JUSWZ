@@ -1703,3 +1703,25 @@ def my_shifts(request):
         "my_availability": my_availability,
         "my_time_off": my_time_off,
     })
+    
+@never_cache
+@login_required
+def workspace_reserve(request):
+    """Collaborator page for reserving workspaces."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'collaborator':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    return render(request, 'dashboard/workspace_reserve.html', {
+        "user_profile": user_profile
+    })
+
+@never_cache
+@login_required
+def my_reservations(request):
+    """Collaborator page for viewing their approved workspace reservations."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'collaborator':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    return render(request, 'dashboard/my_reservations.html', {
+        "user_profile": user_profile
+    })

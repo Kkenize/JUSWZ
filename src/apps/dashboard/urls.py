@@ -27,6 +27,10 @@ urlpatterns = [
     
     # Training Reserve (under My Trainings)
     path("training-reserve/", views.training_reserve, name="training_reserve"),
+    
+    # Workspace Reserve (Collaborator)
+    path('workspace/reserve/', views.workspace_reserve, name='workspace_reserve'),
+    path('my-reservations/', views.my_reservations, name='my_reservations'),
 
     # Calendar pages (under Training Management)
     path('training-management/calendar/add/', views.calendar_add, name='calendar_add'),
