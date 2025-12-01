@@ -35,7 +35,7 @@ def profile_view(request, username):
     try:
         profile = user.profile
     except Profile.DoesNotExist:
-        profile = Profile.objects.create(user=user)
+        profile = Profile.objects.create(user=user, school='Boston College', department='')
 
     context = {
         'profile_user': user,
@@ -50,18 +50,26 @@ def edit_profile(request):
     """
     Edit the current user's profile.
     """
+    from django.utils import timezone
+    
+    try:
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=request.user, school='Boston College', department='')
+    
     if request.method == 'POST':
-        form = ProfileEditForm(request.POST, request.FILES, user=request.user, instance=request.user.profile)
+        form = ProfileEditForm(request.POST, request.FILES, user=request.user, instance=profile)
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile has been updated successfully!')
             return redirect('profiles:profile', username=request.user.username)
     else:
-        form = ProfileEditForm(user=request.user, instance=request.user.profile)
+        form = ProfileEditForm(user=request.user, instance=profile)
     
     context = {
         'form': form,
         'user': request.user,
+        'current_year': timezone.now().year,
     }
     return render(request, 'profiles/edit_profile.html', context)
 
@@ -92,6 +100,9 @@ def admin_user_search(request):
         if role_filter:
             users = users.filter(userprofile__role=role_filter)
     
+    # Optimize query with select_related
+    users = users.select_related('userprofile', 'profile')
+    
     # Paginate results
     paginator = Paginator(users, 20)  # Show 20 users per page
     page_number = request.GET.get('page')
@@ -117,7 +128,10 @@ def admin_profile_management(request, username):
     
     # Get or create user profile and profile
     user_profile, created = UserProfile.objects.get_or_create(user=target_user)
-    profile, created = Profile.objects.get_or_create(user=target_user)
+    profile, created = Profile.objects.get_or_create(
+        user=target_user,
+        defaults={'school': 'Boston College', 'department': ''}
+    )
     
     if request.method == 'POST':
         if 'edit_profile' in request.POST:
@@ -153,3 +167,45 @@ def admin_profile_management(request, username):
         'is_admin_view': True,
     }
     return render(request, 'profiles/admin_profile_management.html', context)
+
+
+@login_required
+def admin_delete_user(request, username):
+    """
+    Admin interface for deleting a user account. Only non-admin users can be deleted.
+    """
+    if not is_admin(request.user):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('profiles:profile', username=request.user.username)
+    
+    target_user = get_object_or_404(User, username=username)
+    user_profile = get_object_or_404(UserProfile, user=target_user)
+    
+    # Prevent deletion of admin users
+    if user_profile.is_admin:
+        messages.error(request, 'You cannot delete an admin user account.')
+        return redirect('profiles:admin_profile_management', username=username)
+    
+    # Prevent self-deletion
+    if target_user == request.user:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('profiles:admin_profile_management', username=username)
+    
+    if request.method == 'POST':
+        # Confirm deletion
+        username_deleted = target_user.username
+        target_user.delete()  # This will cascade delete Profile and UserProfile
+        messages.success(request, f'User account "{username_deleted}" has been deleted successfully.')
+        return redirect('profiles:admin_user_search')
+    
+    # GET request - show confirmation page
+    try:
+        profile = target_user.profile
+    except Profile.DoesNotExist:
+        profile = None
+    
+    return render(request, 'profiles/admin_delete_user.html', {
+        'target_user': target_user,
+        'user_profile': user_profile,
+        'profile': profile,
+    })
