@@ -5,7 +5,12 @@
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="fw-bold mb-3">Classroom Request</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="fw-bold mb-0">Classroom Request</h1>
+    <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-outline-secondary">
+      View My Reservations
+    </a>
+  </div>
   <p class="text-muted mb-4">
     Collaborators can request exclusive use of Hatchery spaces for courses or events.
     Requests will be validated by staff before the space is confirmed.

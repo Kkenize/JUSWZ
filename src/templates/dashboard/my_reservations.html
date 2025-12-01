@@ -5,7 +5,12 @@
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="fw-bold mb-3">My Reservations</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="fw-bold mb-0">My Reservations</h1>
+    <a href="{% url 'dashboard:workspace_reserve' %}" class="btn btn-bc-gold">
+      Request Classroom
+    </a>
+  </div>
   <p class="text-muted mb-4">
     View the status of your Hatchery classroom or station reservation requests.
   </p>
@@ -107,6 +112,15 @@
 }
 .btn-outline-danger:hover {
   background-color: #b63d3d;
+  color: white;
+}
+.btn-bc-gold {
+  background-color: #b69a3d;
+  color: white;
+  font-weight: 600;
+}
+.btn-bc-gold:hover {
+  background-color: #9a8433;
   color: white;
 }
 </style>
