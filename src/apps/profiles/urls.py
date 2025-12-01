@@ -8,4 +8,5 @@ urlpatterns = [
     path('edit/', views.edit_profile, name='edit_profile'),
     path('admin/users/', views.admin_user_search, name='admin_user_search'),
     path('admin/profile/<str:username>/', views.admin_profile_management, name='admin_profile_management'),
+    path('admin/profile/<str:username>/delete/', views.admin_delete_user, name='admin_delete_user'),
 ]

@@ -1,295 +1,223 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - User Management</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #FFFFFF;
-            color: #1C1C1C;
-        }
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #FFFFFF;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow: hidden;
-            border: 1px solid #E0E0E0;
-        }
-        .admin-header {
-            background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%);
-            color: #FFFFFF;
-            padding: 30px;
-            text-align: center;
-            border-bottom: 3px solid #D4AF37;
-        }
-        .admin-header h1 {
-            margin: 0;
-            font-size: 2em;
-        }
-        .admin-content {
-            padding: 30px;
-            background: #FFFFFF;
-        }
-        .search-form {
-            background: #F8F8F8;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 4px solid #D4AF37;
-        }
-        .form-row {
-            display: flex;
-            gap: 15px;
-            align-items: end;
-        }
-        .form-group {
-            flex: 1;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #1C1C1C;
-        }
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #E0E0E0;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background: #FFFFFF;
-            color: #1C1C1C;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: #D4AF37;
-            box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
-        }
-        .btn {
-            background: #D4AF37;
-            color: #1C1C1C;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            text-decoration: none;
-            display: inline-block;
-            transition: background 0.3s;
-            font-weight: bold;
-        }
-        .btn:hover {
-            background: #B8941F;
-            color: #FFFFFF;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            color: #FFFFFF;
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .users-table th,
-        .users-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #E0E0E0;
-        }
-        .users-table th {
-            background: #F8F8F8;
-            font-weight: bold;
-            color: #1C1C1C;
-        }
-        .users-table tr:hover {
-            background: #F8F8F8;
-        }
-        .role-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .role-admin {
-            background: #D4AF37;
-            color: #1C1C1C;
-        }
-        .role-staff {
-            background: #17a2b8;
-            color: #FFFFFF;
-        }
-        .role-student {
-            background: #6c757d;
-            color: #FFFFFF;
-        }
-        .pagination {
-            display: flex;
-            justify-content: center;
-            margin-top: 30px;
-            gap: 10px;
-        }
-        .pagination a,
-        .pagination span {
-            padding: 8px 12px;
-            border: 1px solid #E0E0E0;
-            text-decoration: none;
-            color: #1C1C1C;
-            border-radius: 4px;
-        }
-        .pagination a:hover {
-            background: #D4AF37;
-            color: #1C1C1C;
-        }
-        .pagination .current {
-            background: #D4AF37;
-            color: #1C1C1C;
-            font-weight: bold;
-        }
-        .back-button {
-            display: inline-block;
-            background: #6c757d;
-            color: #FFFFFF;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            transition: background 0.3s;
-        }
-        .back-button:hover {
-            background: #5a6268;
-        }
-        .messages {
-            margin-bottom: 20px;
-        }
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid transparent;
-            border-radius: 5px;
-        }
-        .alert-success {
-            color: #155724;
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-        }
-        .alert-error {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-        }
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    <div class="admin-container">
-        <div class="admin-header">
-            <h1>Admin - User Management</h1>
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}User Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">User Management</h1>
+            <p class="text-muted mb-0">Search and manage user accounts</p>
         </div>
-        
-        <div class="admin-content">
-            <a href="{% url 'profiles:profile' username=request.user.username %}" class="back-button">← Back to Profile</a>
-            
-            {% if messages %}
-                <div class="messages">
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            
-            <div class="search-form">
-                <form method="get">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.search_query.id_for_label }}">Search Users</label>
-                            {{ form.search_query }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.role_filter.id_for_label }}">Filter by Role</label>
-                            {{ form.role_filter }}
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn">Search</button>
-                        </div>
-                    </div>
-                </form>
+        <a href="{% url 'profiles:profile' username=request.user.username %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Profile
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            
-            {% if users %}
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                            <tr>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.get_full_name|default:"-" }}</td>
-                                <td>{{ user.email }}</td>
-                                <td>
-                                    {% if user.userprofile.role == 'admin' %}
-                                        <span class="role-badge role-admin">Admin</span>
-                                    {% elif user.userprofile.role == 'staff' %}
-                                        <span class="role-badge role-staff">Staff</span>
-                                    {% else %}
-                                        <span class="role-badge role-student">Student</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                                <td>
-                                    <a href="{% url 'profiles:admin_profile_management' username=user.username %}" class="btn btn-secondary">Manage</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                
-                {% if page_obj.has_other_pages %}
-                    <div class="pagination">
-                        {% if page_obj.has_previous %}
-                            <a href="?page=1{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">&laquo; First</a>
-                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Previous</a>
-                        {% endif %}
-                        
-                        <span class="current">
-                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                        </span>
-                        
-                        {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Next</a>
-                            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">Last &raquo;</a>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            {% else %}
-                <div class="no-results">
-                    <p>No users found matching your search criteria.</p>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Search Form Card -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-bold">Search Users</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="{{ form.search_query.id_for_label }}" class="form-label fw-semibold">Search</label>
+                    {{ form.search_query }}
+                    <small class="text-muted d-block mt-1">Search by username, email, or name</small>
                 </div>
-            {% endif %}
+                <div class="col-md-4">
+                    <label for="{{ form.role_filter.id_for_label }}" class="form-label fw-semibold">Filter by Role</label>
+                    {{ form.role_filter }}
+                    <small class="text-muted d-block mt-1" style="visibility: hidden;">Placeholder</small>
+                </div>
+                <div class="col-md-3 d-flex flex-column">
+                    <label class="form-label fw-semibold" style="visibility: hidden;">Button</label>
+                    <button type="submit" class="btn btn-bc-gold w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <small class="text-muted d-block mt-1" style="visibility: hidden;">Placeholder</small>
+                </div>
+            </form>
         </div>
     </div>
-</body>
-</html>
+
+    <!-- Results -->
+    {% if users %}
+        <!-- Results Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-0">Results</h5>
+                <small class="text-muted">Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }} users</small>
+            </div>
+        </div>
+
+        <!-- Users Grid -->
+        <div class="row g-3 mb-4">
+            {% for user in users %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm border-0 h-100 user-card">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="flex-shrink-0">
+                                    {% if user.profile and user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #D4AF37;">
+                                    {% else %}
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white" style="width: 50px; height: 50px; background: linear-gradient(135deg, #1C1C1C 0%, #2C2C2C 100%); font-size: 1.2rem; border: 2px solid #D4AF37;">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                                    <p class="text-muted small mb-0">@{{ user.username }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted d-block mb-1">Email</small>
+                                <div class="small text-truncate">{{ user.email }}</div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted d-block mb-1">Role</small>
+                                <span class="badge {% if user.userprofile.role == 'admin' %}bg-warning text-dark{% elif user.userprofile.role == 'staff' %}bg-info{% elif user.userprofile.role == 'collaborator' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ user.userprofile.get_role_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-1">Joined</small>
+                                <div class="small">{{ user.date_joined|date:"M d, Y" }}</div>
+                            </div>
+                            
+                            <a href="{% url 'profiles:admin_profile_management' username=user.username %}" class="btn btn-sm btn-bc-gold w-100">
+                                <i class="bi bi-gear"></i> Manage User
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="User pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.role_filter %}&role_filter={{ request.GET.role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- No Results -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search" style="font-size: 3rem; color: #dee2e6;"></i>
+                <h5 class="mt-3 mb-2">No users found</h5>
+                <p class="text-muted mb-0">Try adjusting your search criteria or filters.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+.btn-bc-gold {
+    background-color: #b69a3d;
+    color: white;
+    font-weight: 600;
+    border: none;
+}
+.btn-bc-gold:hover {
+    background-color: #9a8433;
+    color: white;
+}
+.form-control, .form-select {
+    border: 1px solid #dee2e6;
+    transition: all 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #D4AF37;
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+}
+.user-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+.page-link {
+    color: #6c757d;
+    border-color: #dee2e6;
+}
+.page-link:hover {
+    color: #D4AF37;
+    background-color: #f8f9fa;
+    border-color: #D4AF37;
+}
+.page-item.active .page-link {
+    background-color: #D4AF37;
+    border-color: #D4AF37;
+    color: #1C1C1C;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
