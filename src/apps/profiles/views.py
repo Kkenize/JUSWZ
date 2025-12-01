@@ -2,12 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Profile, UserProfile
-from .forms import ProfileEditForm, CustomPasswordChangeForm, AdminRoleForm, AdminUserSearchForm
+from .forms import ProfileEditForm, AdminRoleForm, AdminUserSearchForm
 
 # Create your views here.
 def is_admin(user):
@@ -66,27 +64,6 @@ def edit_profile(request):
         'user': request.user,
     }
     return render(request, 'profiles/edit_profile.html', context)
-
-@login_required
-def change_password(request):
-    """
-    Change the current user's password.
-    """
-    if request.method == 'POST':
-        form = CustomPasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)  # Important!
-            messages.success(request, 'Your password was successfully updated!')
-            return redirect('profiles:profile', username=request.user.username)
-    else:
-        form = CustomPasswordChangeForm(request.user)
-    
-    context = {
-        'form': form,
-        'user': request.user,
-    }
-    return render(request, 'profiles/change_password.html', context)
 
 @login_required
 def admin_user_search(request):
@@ -151,19 +128,6 @@ def admin_profile_management(request, username):
                 messages.success(request, f'{target_user.username}\'s profile has been updated successfully!')
                 return redirect('profiles:admin_profile_management', username=username)
         
-        elif 'change_password' in request.POST:
-            # Admin password protection
-            if user_profile.is_admin:
-                messages.error(request, 'You cannot change the password of an admin user.')
-                return redirect('profiles:admin_profile_management', username=username)
-            
-            # Handle password change
-            password_form = CustomPasswordChangeForm(target_user, request.POST)
-            if password_form.is_valid():
-                password_form.save()
-                messages.success(request, f'{target_user.username}\'s password has been updated successfully!')
-                return redirect('profiles:admin_profile_management', username=username)
-        
         elif 'change_role' in request.POST:
             # Admin role protection
             if user_profile.is_admin:
@@ -178,7 +142,6 @@ def admin_profile_management(request, username):
 
     else:
         form = ProfileEditForm(user=target_user, instance=profile)
-        password_form = CustomPasswordChangeForm(target_user)
         role_form = AdminRoleForm(instance=user_profile)
     
     context = {
@@ -186,7 +149,6 @@ def admin_profile_management(request, username):
         'profile': profile,
         'user_profile': user_profile,
         'form': form,
-        'password_form': password_form,
         'role_form': role_form,
         'is_admin_view': True,
     }

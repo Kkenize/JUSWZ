@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import PasswordChangeForm
 from .models import Profile, UserProfile
 
 class ProfileEditForm(forms.ModelForm):
@@ -46,16 +45,6 @@ class ProfileEditForm(forms.ModelForm):
             profile.save()
         
         return profile
-
-class CustomPasswordChangeForm(PasswordChangeForm):
-    """Custom password change form with better styling."""
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Add CSS classes for better styling
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': 'form-control'})
 
 class AdminRoleForm(forms.ModelForm):
     """Form for admin to change user roles."""
