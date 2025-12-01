@@ -9,7 +9,7 @@
     <div>
       <h1 class="fw-bold mb-1">Reject Workspace Reservation</h1>
     </div>
-    <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-outline-secondary">← Back to Reservations</a>
+    <a href="{{ next_url|default:'#' }}" class="btn btn-outline-secondary">← Back to Requests</a>
   </div>
 
   <div class="row">
@@ -30,6 +30,7 @@
           
           <form method="post" class="mt-4">
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
             <div class="mb-3">
               <label for="rejection_reason" class="form-label">Rejection Reason (Optional)</label>
               <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" placeholder="Optional reason for rejection"></textarea>
@@ -45,4 +46,3 @@
   </div>
 </div>
 {% endblock %}
-

@@ -1,0 +1,197 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Training Certificates - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Training Certificates</h1>
+      <p class="text-muted mb-0">Add certificates for learners and track what has been issued.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Staff Dashboard</a>
+      <a href="{% url 'dashboard:training_management' %}" class="btn btn-bc-gold text-white">Manage Trainings</a>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="card-title mb-1">Add Certificate</h5>
+              <p class="text-muted small mb-0">Select the learner, training, and attach the certificate details.</p>
+            </div>
+            <span class="badge bg-light text-dark">Frontend only — hooks to backend coming next</span>
+          </div>
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.user.label }}</label>
+                {{ form.user }}
+                {% if form.user.errors %}<div class="text-danger small">{{ form.user.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.training.label }}</label>
+                {{ form.training }}
+                {% if form.training.errors %}<div class="text-danger small">{{ form.training.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.certificate_id.label }}</label>
+                {{ form.certificate_id }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.certificate_file.label }}</label>
+                {{ form.certificate_file }}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.issued_on.label }}</label>
+                {{ form.issued_on }}
+                {% if form.issued_on.errors %}<div class="text-danger small">{{ form.issued_on.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.expires_on.label }}</label>
+                {{ form.expires_on }}
+                {% if form.expires_on.errors %}<div class="text-danger small">{{ form.expires_on.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.evidence_link.label }}</label>
+                {{ form.evidence_link }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Notify Learner</label>
+                <div class="form-check mt-2">
+                  {{ form.notify_user }}
+                  <label class="form-check-label ms-2" for="{{ form.notify_user.id_for_label }}">Send email with certificate link</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label class="form-label fw-semibold">{{ form.notes.label }}</label>
+              {{ form.notes }}
+            </div>
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger mt-3">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <div class="d-flex align-items-center text-muted small">
+                <span class="me-2 bg-success-subtle rounded-circle d-inline-block status-dot"></span>
+                Certificates notify learners automatically once backend wiring is added.
+              </div>
+              <button type="submit" class="btn btn-bc-gold px-4">Save Certificate</button>
+            </div>
+          </form>
+
+          {% if submitted_certificate %}
+            <div class="alert alert-success mt-4 mb-0">
+              <div class="fw-semibold">Captured (demo payload):</div>
+              <ul class="mb-0 small">
+                <li>Learner: {{ submitted_certificate.user }}</li>
+                <li>Training: {{ submitted_certificate.training }}</li>
+                <li>Issued On: {{ submitted_certificate.issued_on }}</li>
+                {% if submitted_certificate.expires_on %}<li>Expires On: {{ submitted_certificate.expires_on }}</li>{% endif %}
+                {% if submitted_certificate.certificate_id %}<li>Certificate ID: {{ submitted_certificate.certificate_id }}</li>{% endif %}
+                {% if submitted_certificate.evidence_link %}<li>Evidence: {{ submitted_certificate.evidence_link }}</li>{% endif %}
+                {% if submitted_certificate.notes %}<li>Notes: {{ submitted_certificate.notes }}</li>{% endif %}
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 class="fw-bold mb-1">Waiting for Certificates</h6>
+              <p class="text-muted small mb-0">Recent sessions that likely need certificates issued.</p>
+            </div>
+            <span class="badge bg-warning text-dark">Action Needed</span>
+          </div>
+          {% if waiting_for_certificate %}
+            <ul class="list-group list-group-flush">
+              {% for item in waiting_for_certificate %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-semibold">{{ item.title }}</div>
+                    <div class="text-muted small">{{ item.date|date:"M j, Y" }} • {{ item.participants }} attendee{{ item.participants|pluralize }}</div>
+                  </div>
+                  <span class="badge bg-light text-dark">Awaiting issue</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted mb-0">No sessions are waiting for certificates.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">Recently Issued</h6>
+            <span class="badge bg-success-subtle text-success">Demo data</span>
+          </div>
+          {% if recent_certifications %}
+            <div class="vstack gap-3">
+              {% for cert in recent_certifications %}
+                <div class="d-flex justify-content-between align-items-start border rounded p-3">
+                  <div>
+                    <div class="fw-semibold">{{ cert.user }}</div>
+                    <div class="text-muted small">{{ cert.training }}</div>
+                    <div class="small text-muted">{{ cert.issued_on|date:"M j, Y" }}</div>
+                    {% if cert.certificate_id %}
+                      <span class="badge bg-light text-dark mt-1">ID: {{ cert.certificate_id }}</span>
+                    {% endif %}
+                  </div>
+                  <span class="badge {% if cert.status == 'Sent' %}bg-success{% else %}bg-secondary{% endif %}">{{ cert.status }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Once certificates are issued they'll appear here.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.status-dot {
+  width: 10px;
+  height: 10px;
+}
+</style>
+{% endblock %}

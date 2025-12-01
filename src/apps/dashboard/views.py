@@ -11,14 +11,16 @@ from django.contrib import messages
 from django.forms import modelformset_factory
 from django import forms
 from django.utils import timezone
-from django.db.models import Count, Case, When, IntegerField
+from django.db.models import Count, Case, When, IntegerField, Q
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from django.utils.http import url_has_allowed_host_and_scheme
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, create_google_calendar_event, remove_google_calendar_event
-from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm
+from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
@@ -74,8 +76,14 @@ def staff_dashboard(request):
     user_profile = request.user.userprofile
     if user_profile.role != 'staff':
         return HttpResponseForbidden("You do not have permission to access this page.")
+
+    pending_workspace_requests = WorkspaceReservation.objects.filter(status='pending').count()
+    certificate_backlog = Training.objects.filter(date__lte=timezone.localdate()).count()
+
     return render(request, 'dashboard/staff_dashboard.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "pending_workspace_requests": pending_workspace_requests,
+        "certificate_backlog": certificate_backlog,
     })
 
 
@@ -204,6 +212,75 @@ def training_past(request):
         "sort_mode": sort_mode,
         "stats": stats,
     })
+
+
+@never_cache
+@login_required
+def training_certificates(request):
+    """Staff view: add certificates for learner trainings and review recent awards."""
+
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    trainings = Training.objects.order_by('-date', 'title')
+    learners = User.objects.filter(userprofile__role__in=['student', 'collaborator']).order_by(
+        'first_name', 'last_name', 'username'
+    )
+    form = CertificateUploadForm(
+        request.POST or None,
+        request.FILES or None,
+        trainings=trainings,
+        learners=learners
+    )
+
+    submitted_certificate = None
+    if request.method == 'POST':
+        if form.is_valid():
+            submitted_certificate = form.cleaned_data
+            messages.success(
+                request,
+                "Certificate captured. Backend save/notification hooks can connect to this submission."
+            )
+        else:
+            messages.error(request, "Please correct the highlighted errors before submitting.")
+
+    recent_certifications = [
+        {
+            "user": "Pat Student",
+            "training": "Lvl 1 – Intro to 3D Printing",
+            "issued_on": timezone.localdate() - timedelta(days=1),
+            "status": "Sent",
+            "certificate_id": "BC-0145",
+        },
+        {
+            "user": "Alex Collaborator",
+            "training": "Workspace Safety Workshop",
+            "issued_on": timezone.localdate() - timedelta(days=3),
+            "status": "Pending email",
+            "certificate_id": "BC-0144",
+        },
+    ]
+
+    waiting_for_certificate = [
+        {
+            "title": training.title,
+            "date": training.date,
+            "participants": training.participants.count(),
+        }
+        for training in trainings.filter(date__lte=timezone.localdate()).order_by('-date')[:6]
+    ]
+
+    return render(request, "training/staff_certificates.html", {
+        "user_profile": user_profile,
+        "form": form,
+        "trainings": trainings,
+        "learners": learners,
+        "recent_certifications": recent_certifications,
+        "waiting_for_certificate": waiting_for_certificate,
+        "submitted_certificate": submitted_certificate,
+    })
+
 
 @never_cache
 @login_required
@@ -545,6 +622,15 @@ def _build_level_unlock_map(user):
         }
 
     return level_unlocks
+
+
+def _get_safe_next_url(request, default_route_name):
+    """Return a safe next URL for redirects, falling back to a named route."""
+
+    candidate = request.POST.get('next') or request.GET.get('next')
+    if candidate and url_has_allowed_host_and_scheme(candidate, allowed_hosts={request.get_host()}):
+        return candidate
+    return reverse(default_route_name)
 
 @never_cache
 @login_required
@@ -1453,7 +1539,7 @@ def reject_time_off(request, request_id):
         'time_off': time_off,
         'user_profile': user_profile,
     })
-
+    
 @never_cache
 @login_required
 def manage_availability(request):
@@ -1718,6 +1804,56 @@ def my_shifts(request):
         "my_time_off": my_time_off,
     })
     
+
+@never_cache
+@login_required
+def collaborator_requests(request):
+    """Staff/admin view to approve or decline collaborator workspace reservations."""
+
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    status_filter = (request.GET.get('status') or 'pending').lower()
+    if status_filter not in ['pending', 'approved', 'rejected', 'all']:
+        status_filter = 'pending'
+
+    search_query = (request.GET.get('q') or "").strip()
+    reservations = WorkspaceReservation.objects.select_related('user', 'approved_by').order_by('date', 'start_time', '-created_at')
+
+    if status_filter != 'all':
+        reservations = reservations.filter(status=status_filter)
+
+    if search_query:
+        reservations = reservations.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__username__icontains=search_query) |
+            Q(purpose__icontains=search_query)
+        )
+
+    status_counts = {
+        "pending": WorkspaceReservation.objects.filter(status='pending').count(),
+        "approved": WorkspaceReservation.objects.filter(status='approved').count(),
+        "rejected": WorkspaceReservation.objects.filter(status='rejected').count(),
+    }
+
+    upcoming_pending = WorkspaceReservation.objects.filter(
+        status='pending',
+        date__gte=timezone.localdate()
+    ).order_by('date', 'start_time')[:3]
+
+    return render(request, "dashboard/collaborator_requests.html", {
+        "user_profile": user_profile,
+        "reservations": reservations,
+        "status_filter": status_filter,
+        "search_query": search_query,
+        "status_counts": status_counts,
+        "upcoming_pending": upcoming_pending,
+        "next_url": request.get_full_path(),
+    })
+
+
 @never_cache
 @login_required
 def workspace_reserve(request):
@@ -1859,7 +1995,7 @@ def approve_workspace_reservation(request, reservation_id):
     
     if reservation.status != 'pending':
         messages.error(request, "This reservation has already been processed.")
-        return redirect('dashboard:my_reservations')
+        return redirect(_get_safe_next_url(request, 'dashboard:collaborator_requests'))
     
     reservation.status = 'approved'
     reservation.approved_by = request.user
@@ -1867,7 +2003,7 @@ def approve_workspace_reservation(request, reservation_id):
     reservation.save()
     
     messages.success(request, "Reservation approved.")
-    return redirect('dashboard:my_reservations')
+    return redirect(_get_safe_next_url(request, 'dashboard:collaborator_requests'))
 
 
 @never_cache
@@ -1888,9 +2024,10 @@ def reject_workspace_reservation(request, reservation_id):
         reservation.rejection_reason = rejection_reason
         reservation.save()
         messages.success(request, "Reservation rejected.")
-        return redirect('dashboard:my_reservations')
+        return redirect(_get_safe_next_url(request, 'dashboard:collaborator_requests'))
     
     return render(request, 'dashboard/reject_workspace_reservation.html', {
         'reservation': reservation,
         'user_profile': user_profile,
+        'next_url': _get_safe_next_url(request, 'dashboard:collaborator_requests'),
     })

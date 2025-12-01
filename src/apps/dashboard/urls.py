@@ -16,6 +16,7 @@ urlpatterns = [
     path('training-management/', views.training_management, name='training_management'),
     path('training-management/all/', views.training_list, name='training_list'),
     path('training-management/past/', views.training_past, name='training_past'),
+    path('training-management/certificates/', views.training_certificates, name='training_certificates'),
     path('training-management/bulk-edit/', views.training_bulk_edit, name='training_bulk_edit'),
     path('training-management/bulk-remove/', views.training_bulk_remove, name='training_bulk_remove'),
     
@@ -27,6 +28,9 @@ urlpatterns = [
     
     # Training Reserve (under My Trainings)
     path("training-reserve/", views.training_reserve, name="training_reserve"),
+
+    # Collaborator Requests (Staff/Admin)
+    path('collaborator/requests/', views.collaborator_requests, name='collaborator_requests'),
     
     # Workspace Reserve (Collaborator)
     path('workspace/reserve/', views.workspace_reserve, name='workspace_reserve'),

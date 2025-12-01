@@ -1,0 +1,206 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Collaborator Requests - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Collaborator Requests</h1>
+      <p class="text-muted mb-0">Approve or decline workspace reservations submitted by collaborators.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Staff Dashboard</a>
+      <a href="{% url 'dashboard:workspace_reserve' %}" class="btn btn-outline-dark">View Request Form</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Pending</p>
+          <h4 class="mb-0">{{ status_counts.pending|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Approved</p>
+          <h4 class="mb-0 text-success">{{ status_counts.approved|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Rejected</p>
+          <h4 class="mb-0 text-danger">{{ status_counts.rejected|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Upcoming Priority</p>
+          <h4 class="mb-0">{{ upcoming_pending|length }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'dashboard:collaborator_requests' %}?status=pending{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'pending' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="{% url 'dashboard:collaborator_requests' %}?status=approved{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'approved' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Approved</a>
+      <a href="{% url 'dashboard:collaborator_requests' %}?status=rejected{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'rejected' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Rejected</a>
+      <a href="{% url 'dashboard:collaborator_requests' %}?status=all{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'all' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">All</a>
+    </div>
+
+    <form method="get" class="d-flex align-items-center gap-2">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by name or purpose..." style="min-width: 240px;">
+      <button type="submit" class="btn btn-outline-secondary">Search</button>
+    </form>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Requests</h5>
+            {% if search_query %}
+              <span class="badge bg-light text-dark">Filtered by "{{ search_query }}"</span>
+            {% endif %}
+          </div>
+
+          {% if reservations %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr class="text-muted small">
+                    <th scope="col">Collaborator</th>
+                    <th scope="col">Workspace</th>
+                    <th scope="col">Date / Time</th>
+                    <th scope="col">Purpose</th>
+                    <th scope="col" class="text-center">Status</th>
+                    <th scope="col" class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for reservation in reservations %}
+                    <tr>
+                      <td>
+                        <div class="fw-semibold">{{ reservation.user.get_full_name|default:reservation.user.username }}</div>
+                        <div class="text-muted small">{{ reservation.user.username }}</div>
+                      </td>
+                      <td>
+                        <div class="fw-semibold">{{ reservation.get_workspace_display }}</div>
+                        <div class="text-muted small">Participants: {{ reservation.estimated_participants|default:"—" }}</div>
+                      </td>
+                      <td>
+                        <div class="fw-semibold">{{ reservation.date|date:"M j, Y" }}</div>
+                        <div class="text-muted small">{{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</div>
+                      </td>
+                      <td class="small text-muted">
+                        {{ reservation.purpose|truncatewords:16 }}
+                      </td>
+                      <td class="text-center">
+                        {% if reservation.status == 'pending' %}
+                          <span class="badge bg-warning text-dark">Pending</span>
+                        {% elif reservation.status == 'approved' %}
+                          <span class="badge bg-success">Approved</span>
+                        {% elif reservation.status == 'rejected' %}
+                          <span class="badge bg-danger">Rejected</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">
+                        {% if reservation.status == 'pending' %}
+                          <form method="post" action="{% url 'dashboard:approve_workspace_reservation' reservation.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next_url }}">
+                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                          </form>
+                          <a href="{% url 'dashboard:reject_workspace_reservation' reservation.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-outline-danger ms-1">Decline</a>
+                        {% else %}
+                          <span class="text-muted small">No action</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <p class="text-muted mb-2">No requests in this view yet.</p>
+              <p class="small text-muted mb-0">Try switching the status filter or clearing the search.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">Upcoming Pending</h6>
+            <span class="badge bg-warning text-dark">{{ upcoming_pending|length }} to review</span>
+          </div>
+          {% if upcoming_pending %}
+            <div class="vstack gap-3">
+              {% for reservation in upcoming_pending %}
+                <div class="border rounded p-3">
+                  <div class="fw-semibold mb-1">{{ reservation.user.get_full_name|default:reservation.user.username }}</div>
+                  <div class="text-muted small">{{ reservation.get_workspace_display }}</div>
+                  <div class="text-muted small">{{ reservation.date|date:"M j, Y" }} • {{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</div>
+                  <p class="small text-muted mb-2">{{ reservation.purpose|truncatewords:12 }}</p>
+                  <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'dashboard:approve_workspace_reservation' reservation.id %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ next_url }}">
+                      <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                    </form>
+                    <a href="{% url 'dashboard:reject_workspace_reservation' reservation.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-outline-danger">Decline</a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No upcoming pending requests.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="fw-bold mb-2">Decision Checklist</h6>
+          <ul class="small text-muted mb-0">
+            <li>Does the requested time conflict with scheduled trainings?</li>
+            <li>Is staffing available for the requested workspace?</li>
+            <li>Is the purpose aligned with Hatchery policies?</li>
+            <li>Confirm participant count and required equipment.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-bc-gold {
+  background-color: #c6a75e;
+  border-color: #c6a75e;
+}
+.btn-bc-gold:hover {
+  background-color: #b39654;
+  border-color: #b39654;
+}
+</style>
+{% endblock %}

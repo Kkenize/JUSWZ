@@ -26,27 +26,31 @@
         <a href="{% url 'dashboard:training_management' %}" class="card-button">Manage Trainings</a>
     </div>
 
-    <!-- Requests -->
+    <!-- Certificates -->
     <div class="dashboard-card">
-        <h3 class="card-title">Requests</h3>
+        <h3 class="card-title">Certificates</h3>
+        <p class="card-text">
+            {{ certificate_backlog }} recent session{{ certificate_backlog|pluralize }} ready for certificates
+        </p>
+        <a href="{% url 'dashboard:training_certificates' %}" class="card-button">Add Certificate</a>
+    </div>
+
+    <!-- Collaborator Requests -->
+    <div class="dashboard-card">
+        <h3 class="card-title">Collaborator Requests</h3>
+        <p class="card-text">
+            {{ pending_workspace_requests }} pending classroom/workspace request{{ pending_workspace_requests|pluralize }}
+        </p>
+        <a href="{% url 'dashboard:collaborator_requests' %}" class="card-button">Review Requests</a>
+    </div>
+
+    <!-- Shift & Time-Off Requests -->
+    <div class="dashboard-card">
+        <h3 class="card-title">Shift Requests</h3>
         {% load dashboard_extras %}
         {% get_pending_shift_requests_count request.user as pending_count %}
         <p class="card-text">{{ pending_count }} Request{{ pending_count|pluralize }} waiting</p>
         <a href="{% url 'dashboard:requests' %}" class="card-button">Review Requests</a>
-    </div>
-
-    <!-- Issue Management -->
-    <div class="dashboard-card">
-        <h3 class="card-title">Issue Management</h3>
-        <p class="card-text">2 Issues pending resolution</p>
-        <a href="#" class="card-button">Resolve Issues</a>
-    </div>
-
-    <!-- User Management -->
-    <div class="dashboard-card">
-        <h3 class="card-title">User Management</h3>
-        <p class="card-text">1 Credential request pending</p>
-        <a href="#" class="card-button">Manage Users</a>
     </div>
 
     <!-- Reports -->

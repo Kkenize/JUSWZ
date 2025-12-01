@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.models import User
 from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation
 
 class TrainingSessionForm(forms.ModelForm):
@@ -138,3 +139,60 @@ class WorkspaceReservationForm(forms.ModelForm):
                 raise forms.ValidationError("Reservation date cannot be in the past.")
         
         return cleaned_data
+
+
+class CertificateUploadForm(forms.Form):
+    """Simple form to capture certificate metadata; backend persistence to be wired later."""
+
+    user = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select learner'}),
+        label="Student/Collaborator"
+    )
+    training = forms.ModelChoiceField(
+        queryset=Training.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select training session'}),
+        label="Training Session"
+    )
+    certificate_id = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., CERT-2024-0198'}),
+        label="Certificate ID (optional)"
+    )
+    issued_on = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Issued On"
+    )
+    expires_on = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Expires On (optional)"
+    )
+    certificate_file = forms.FileField(
+        required=False,
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        label="Certificate File (PDF/image)"
+    )
+    evidence_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Link to evidence or portfolio'}),
+        label="Evidence URL (optional)"
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes for the learner or internal team'}),
+        label="Notes"
+    )
+    notify_user = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label="Send notification to learner"
+    )
+
+    def __init__(self, *args, trainings=None, learners=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        trainings = trainings if trainings is not None else Training.objects.none()
+        learners = learners if learners is not None else User.objects.none()
+        self.fields['training'].queryset = trainings
+        self.fields['user'].queryset = learners

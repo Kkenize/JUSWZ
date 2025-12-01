@@ -37,6 +37,11 @@
                 <a href="#reports" class="nav-link">Issues/Reports</a>
                 <a href="#waitlists" class="nav-link">My Waitlists</a>
 
+                {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
+                    <a href="{% url 'dashboard:training_certificates' %}" class="nav-link">Certificates</a>
+                    <a href="{% url 'dashboard:collaborator_requests' %}" class="nav-link">Collaborator Requests</a>
+                {% endif %}
+
                 <!-- User Profile -->
                 <a href="{% url 'profiles:profile' request.user.username %}" class="nav-link">User Profile</a>
 
