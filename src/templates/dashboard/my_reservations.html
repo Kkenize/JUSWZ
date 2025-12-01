@@ -10,65 +10,89 @@
     View the status of your Hatchery classroom or station reservation requests.
   </p>
 
-  <!-- Reservation List -->
-  <div class="row g-4">
-    <!-- Example Reservation Card -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title fw-bold">Hatch Front</h5>
-          <p class="card-text text-muted mb-1">
-            <i class="bi bi-calendar"></i> Dec 2, 2025 — 2:00 PM to 4:30 PM
-          </p>
-          <p class="card-text text-muted small mb-2">
-            <i class="bi bi-people"></i> 10 participants
-          </p>
-          <p class="card-text mb-2"><strong>Purpose:</strong> Product Design Workshop</p>
-          <span class="badge bg-success">Approved</span>
-        </div>
-        <div class="card-footer bg-transparent border-0 text-end">
-          <button class="btn btn-outline-danger btn-sm">Cancel</button>
-        </div>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
-    </div>
+    {% endfor %}
+  {% endif %}
 
-    <!-- Example Pending Card -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title fw-bold">Prototyping Studio</h5>
-          <p class="card-text text-muted mb-1">
-            <i class="bi bi-calendar"></i> Dec 10, 2025 — 1:00 PM to 3:00 PM
-          </p>
-          <p class="card-text text-muted small mb-2">
-            <i class="bi bi-people"></i> 6 participants
-          </p>
-          <p class="card-text mb-2"><strong>Purpose:</strong> Engineering Demo</p>
-          <span class="badge bg-warning text-dark">Pending</span>
-        </div>
-        <div class="card-footer bg-transparent border-0 text-end">
-          <button class="btn btn-outline-secondary btn-sm" disabled>Awaiting Approval</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Example Rejected Card -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title fw-bold">Hatch Back</h5>
-          <p class="card-text text-muted mb-1">
-            <i class="bi bi-calendar"></i> Nov 28, 2025 — 9:00 AM to 11:00 AM
-          </p>
-          <p class="card-text text-muted small mb-2">
-            <i class="bi bi-people"></i> 8 participants
-          </p>
-          <p class="card-text mb-2"><strong>Purpose:</strong> Faculty Meeting</p>
-          <span class="badge bg-danger">Rejected</span>
-        </div>
-      </div>
-    </div>
+  <!-- Status Filter -->
+  <div class="mb-3">
+    <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+    <a href="{% url 'dashboard:my_reservations' %}?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
+    <a href="{% url 'dashboard:my_reservations' %}?status=approved" class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-success{% endif %}">Approved</a>
+    <a href="{% url 'dashboard:my_reservations' %}?status=rejected" class="btn btn-sm {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">Rejected</a>
   </div>
+
+  <!-- Reservation List -->
+  {% if reservations %}
+    <div class="row g-4">
+      {% for reservation in reservations %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              <h5 class="card-title fw-bold">{{ reservation.get_workspace_display }}</h5>
+              <p class="card-text text-muted mb-1">
+                <i class="bi bi-calendar"></i> {{ reservation.date|date:"M j, Y" }} — {{ reservation.start_time|time:"g:i A" }} to {{ reservation.end_time|time:"g:i A" }}
+              </p>
+              {% if reservation.estimated_participants %}
+                <p class="card-text text-muted small mb-2">
+                  <i class="bi bi-people"></i> {{ reservation.estimated_participants }} participant{{ reservation.estimated_participants|pluralize }}
+                </p>
+              {% endif %}
+              <p class="card-text mb-2"><strong>Purpose:</strong> {{ reservation.purpose|truncatewords:10 }}</p>
+              
+              {% if reservation.status == 'pending' %}
+                <span class="badge bg-warning text-dark">Pending</span>
+              {% elif reservation.status == 'approved' %}
+                <span class="badge bg-success">Approved</span>
+                {% if reservation.approved_by %}
+                  <p class="card-text text-muted small mt-1">
+                    Approved by {{ reservation.approved_by.get_full_name|default:reservation.approved_by.username }} on {{ reservation.approved_at|date:"M j, Y" }}
+                  </p>
+                {% endif %}
+              {% elif reservation.status == 'rejected' %}
+                <span class="badge bg-danger">Rejected</span>
+                {% if reservation.rejection_reason %}
+                  <p class="card-text text-danger small mt-1">
+                    <strong>Reason:</strong> {{ reservation.rejection_reason }}
+                  </p>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="card-footer bg-transparent border-0 text-end">
+              {% if reservation.status == 'pending' %}
+                <a href="{% url 'dashboard:edit_workspace_reservation' reservation.id %}" class="btn btn-outline-primary btn-sm me-2">Edit</a>
+                <form method="post" action="{% url 'dashboard:delete_workspace_reservation' reservation.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this reservation?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+              {% elif reservation.status == 'approved' %}
+                <a href="{% url 'dashboard:edit_workspace_reservation' reservation.id %}" class="btn btn-outline-primary btn-sm me-2">Request Edit</a>
+                <form method="post" action="{% url 'dashboard:delete_workspace_reservation' reservation.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this reservation?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+              {% elif reservation.status == 'rejected' %}
+                <form method="post" action="{% url 'dashboard:delete_workspace_reservation' reservation.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this reservation?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <p class="mb-0">You don't have any reservations{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+      <a href="{% url 'dashboard:workspace_reserve' %}" class="btn btn-primary mt-2">Create a Reservation</a>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
 

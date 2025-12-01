@@ -156,6 +156,78 @@ class TimeOffRequest(models.Model):
         return self.status == 'rejected'
 
 
+class WorkspaceReservation(models.Model):
+    """Workspace reservation requests from collaborators."""
+    WORKSPACE_CHOICES = [
+        ('hatch_front', 'Hatch Front'),
+        ('hatch_back', 'Hatch Back'),
+        ('prototyping_studio', 'Prototyping Studio'),
+        ('prototyping_shop', 'Prototyping Shop'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workspace_reservations')
+    workspace = models.CharField(max_length=50, choices=WORKSPACE_CHOICES)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    purpose = models.TextField()
+    estimated_participants = models.PositiveIntegerField(null=True, blank=True)
+    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='workspace_reservations_approved'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        workspace_display = dict(self.WORKSPACE_CHOICES).get(self.workspace, self.workspace)
+        return f"{self.user.username} - {workspace_display} on {self.date} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+    
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+    
+    @property
+    def is_rejected(self):
+        return self.status == 'rejected'
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+        
+        # Validate end_time > start_time
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError("End time must be after start time.")
+        
+        # Validate date >= today when creating (only if this is a new instance)
+        if not self.pk and self.date and self.date < timezone.localdate():
+            raise ValidationError("Reservation date cannot be in the past.")
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class Availability(models.Model):
     """Supports both recurring weekly and one-time availability for staff members."""
     DAY_CHOICES = [

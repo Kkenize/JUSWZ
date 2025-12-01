@@ -1,5 +1,5 @@
 from django import forms
-from .models import Training, ShiftRequest, TimeOffRequest, Availability
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation
 
 class TrainingSessionForm(forms.ModelForm):
     class Meta:
@@ -105,4 +105,36 @@ class AvailabilityForm(forms.ModelForm):
         if start_time and end_time and start_time >= end_time:
             raise forms.ValidationError("End time must be after start time.")
 
+        return cleaned_data
+
+
+class WorkspaceReservationForm(forms.ModelForm):
+    class Meta:
+        model = WorkspaceReservation
+        fields = ['workspace', 'date', 'start_time', 'end_time', 'purpose', 'estimated_participants']
+        widgets = {
+            'workspace': forms.Select(attrs={'class': 'form-select', 'id': 'workspace'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'date'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'start_time'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'end_time'}),
+            'purpose': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe the course, project, or event...', 'id': 'purpose'}),
+            'estimated_participants': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 30, 'placeholder': 'e.g., 10', 'id': 'participants'}),
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        date = cleaned_data.get('date')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        
+        # Validate end_time > start_time
+        if start_time and end_time and end_time <= start_time:
+            raise forms.ValidationError("End time must be after start time.")
+        
+        # Validate date >= today when creating (only if this is a new instance)
+        if not self.instance.pk and date:
+            from django.utils import timezone
+            if date < timezone.localdate():
+                raise forms.ValidationError("Reservation date cannot be in the past.")
+        
         return cleaned_data

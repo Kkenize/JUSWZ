@@ -30,6 +30,10 @@ urlpatterns = [
     
     # Workspace Reserve (Collaborator)
     path('workspace/reserve/', views.workspace_reserve, name='workspace_reserve'),
+    path('workspace/reserve/<int:reservation_id>/edit/', views.edit_workspace_reservation, name='edit_workspace_reservation'),
+    path('workspace/reserve/<int:reservation_id>/delete/', views.delete_workspace_reservation, name='delete_workspace_reservation'),
+    path('workspace/reserve/<int:reservation_id>/approve/', views.approve_workspace_reservation, name='approve_workspace_reservation'),
+    path('workspace/reserve/<int:reservation_id>/reject/', views.reject_workspace_reservation, name='reject_workspace_reservation'),
     path('my-reservations/', views.my_reservations, name='my_reservations'),
 
     # Calendar pages (under Training Management)

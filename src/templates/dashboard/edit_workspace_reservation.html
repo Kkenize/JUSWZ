@@ -1,25 +1,38 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Request Classroom Use | The Hatchery{% endblock %}
+{% block title %}Edit Reservation | The Hatchery{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="fw-bold mb-3">Classroom Request</h1>
+  <h1 class="fw-bold mb-3">{% if is_edit_request %}Request Edit{% else %}Edit Reservation{% endif %}</h1>
   <p class="text-muted mb-4">
-    Collaborators can request exclusive use of Hatchery spaces for courses or events.
-    Requests will be validated by staff before the space is confirmed.
+    {% if is_edit_request %}
+      This reservation has been approved. Your edits will create a new pending request that needs staff approval.
+    {% else %}
+      Update your reservation details below.
+    {% endif %}
   </p>
 
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
   <div class="card shadow-sm border-0 p-4">
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
+    <div class="mb-3">
+      <h5>Current Reservation Details</h5>
+      <p class="text-muted mb-1"><strong>Workspace:</strong> {{ reservation.get_workspace_display }}</p>
+      <p class="text-muted mb-1"><strong>Date:</strong> {{ reservation.date|date:"M j, Y" }}</p>
+      <p class="text-muted mb-1"><strong>Time:</strong> {{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</p>
+      <p class="text-muted mb-1"><strong>Status:</strong> <span class="badge bg-{% if reservation.status == 'pending' %}warning{% elif reservation.status == 'approved' %}success{% else %}danger{% endif %}">{{ reservation.get_status_display }}</span></p>
+    </div>
+
+    <hr>
 
     <form method="post">
       {% csrf_token %}
@@ -84,9 +97,10 @@
       {% endif %}
 
       <!-- Submit -->
-      <div class="d-flex justify-content-end">
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-secondary px-4">Cancel</a>
         <button type="submit" class="btn btn-bc-gold px-4">
-          Submit Request
+          {% if is_edit_request %}Submit Edit Request{% else %}Save Changes{% endif %}
         </button>
       </div>
     </form>
@@ -107,3 +121,4 @@
 }
 </style>
 {% endblock %}
+

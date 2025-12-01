@@ -17,8 +17,8 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training, ShiftRequest, TimeOffRequest, Availability, create_google_calendar_event, remove_google_calendar_event
-from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, create_google_calendar_event, remove_google_calendar_event
+from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
@@ -1725,17 +1725,172 @@ def workspace_reserve(request):
     user_profile = request.user.userprofile
     if user_profile.role != 'collaborator':
         return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    if request.method == 'POST':
+        form = WorkspaceReservationForm(request.POST)
+        if form.is_valid():
+            reservation = form.save(commit=False)
+            reservation.user = request.user
+            reservation.status = 'pending'
+            reservation.save()
+            messages.success(request, "Reservation request submitted successfully! It will be reviewed by staff.")
+            return redirect('dashboard:my_reservations')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = WorkspaceReservationForm()
+    
     return render(request, 'dashboard/workspace_reserve.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "form": form
     })
 
 @never_cache
 @login_required
 def my_reservations(request):
-    """Collaborator page for viewing their approved workspace reservations."""
+    """Collaborator page for viewing their workspace reservations."""
     user_profile = request.user.userprofile
     if user_profile.role != 'collaborator':
         return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    reservations = WorkspaceReservation.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Filter by status if provided
+    status_filter = request.GET.get('status')
+    if status_filter in ['pending', 'approved', 'rejected']:
+        reservations = reservations.filter(status=status_filter)
+    
     return render(request, 'dashboard/my_reservations.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "reservations": reservations,
+        "status_filter": status_filter
+    })
+
+
+@never_cache
+@login_required
+def edit_workspace_reservation(request, reservation_id):
+    """Edit workspace reservation - different behavior based on status."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'collaborator':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    reservation = get_object_or_404(WorkspaceReservation, id=reservation_id, user=request.user)
+    
+    # Rejected reservations cannot be edited
+    if reservation.status == 'rejected':
+        messages.error(request, "Rejected reservations cannot be edited.")
+        return redirect('dashboard:my_reservations')
+    
+    # Approved reservations: create a new pending edit request
+    if reservation.status == 'approved':
+        if request.method == 'POST':
+            form = WorkspaceReservationForm(request.POST)
+            if form.is_valid():
+                # Create a new reservation with the edited data
+                new_reservation = form.save(commit=False)
+                new_reservation.user = request.user
+                new_reservation.status = 'pending'
+                new_reservation.save()
+                messages.success(request, "Edit request submitted! It will be reviewed by staff.")
+                return redirect('dashboard:my_reservations')
+        else:
+            # Pre-fill form with existing reservation data
+            form = WorkspaceReservationForm(instance=reservation)
+        
+        return render(request, 'dashboard/edit_workspace_reservation.html', {
+            'form': form,
+            'reservation': reservation,
+            'user_profile': user_profile,
+            'is_edit_request': True
+        })
+    
+    # Pending reservations: direct edit
+    if reservation.status == 'pending':
+        if request.method == 'POST':
+            form = WorkspaceReservationForm(request.POST, instance=reservation)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Reservation updated successfully.")
+                return redirect('dashboard:my_reservations')
+        else:
+            form = WorkspaceReservationForm(instance=reservation)
+        
+        return render(request, 'dashboard/edit_workspace_reservation.html', {
+            'form': form,
+            'reservation': reservation,
+            'user_profile': user_profile,
+            'is_edit_request': False
+        })
+    
+    return redirect('dashboard:my_reservations')
+
+
+@never_cache
+@login_required
+def delete_workspace_reservation(request, reservation_id):
+    """Delete workspace reservation - allowed at any status."""
+    user_profile = request.user.userprofile
+    if user_profile.role != 'collaborator':
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    reservation = get_object_or_404(WorkspaceReservation, id=reservation_id, user=request.user)
+    
+    if request.method == 'POST':
+        reservation.delete()
+        messages.success(request, "Reservation deleted successfully.")
+        return redirect('dashboard:my_reservations')
+    
+    return render(request, 'dashboard/delete_workspace_reservation.html', {
+        'reservation': reservation,
+        'user_profile': user_profile
+    })
+
+
+@never_cache
+@login_required
+def approve_workspace_reservation(request, reservation_id):
+    """Approve a workspace reservation. Only staff/admin can approve."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page. Only staff/admin can approve reservations.")
+    
+    reservation = get_object_or_404(WorkspaceReservation, id=reservation_id)
+    
+    if reservation.status != 'pending':
+        messages.error(request, "This reservation has already been processed.")
+        return redirect('dashboard:my_reservations')
+    
+    reservation.status = 'approved'
+    reservation.approved_by = request.user
+    reservation.approved_at = timezone.now()
+    reservation.save()
+    
+    messages.success(request, "Reservation approved.")
+    return redirect('dashboard:my_reservations')
+
+
+@never_cache
+@login_required
+def reject_workspace_reservation(request, reservation_id):
+    """Reject a workspace reservation. Only staff/admin can reject."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page. Only staff/admin can reject reservations.")
+    
+    reservation = get_object_or_404(WorkspaceReservation, id=reservation_id)
+    
+    if request.method == 'POST':
+        rejection_reason = request.POST.get('rejection_reason', '')
+        reservation.status = 'rejected'
+        reservation.approved_by = request.user
+        reservation.approved_at = timezone.now()
+        reservation.rejection_reason = rejection_reason
+        reservation.save()
+        messages.success(request, "Reservation rejected.")
+        return redirect('dashboard:my_reservations')
+    
+    return render(request, 'dashboard/reject_workspace_reservation.html', {
+        'reservation': reservation,
+        'user_profile': user_profile,
     })

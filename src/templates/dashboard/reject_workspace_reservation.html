@@ -1,0 +1,48 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Reject Workspace Reservation - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Reject Workspace Reservation</h1>
+    </div>
+    <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-outline-secondary">← Back to Reservations</a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Reservation Details</h5>
+          <p><strong>Requested by:</strong> {{ reservation.user.get_full_name|default:reservation.user.username }}</p>
+          <p><strong>Workspace:</strong> {{ reservation.get_workspace_display }}</p>
+          <p><strong>Date:</strong> {{ reservation.date|date:"M j, Y" }}</p>
+          <p><strong>Time:</strong> {{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</p>
+          {% if reservation.estimated_participants %}
+            <p><strong>Estimated Participants:</strong> {{ reservation.estimated_participants }}</p>
+          {% endif %}
+          {% if reservation.purpose %}
+            <p><strong>Purpose:</strong> {{ reservation.purpose }}</p>
+          {% endif %}
+          
+          <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="rejection_reason" class="form-label">Rejection Reason (Optional)</label>
+              <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" placeholder="Optional reason for rejection"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">Reject Reservation</button>
+              <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
