@@ -37,7 +37,14 @@
             <span class="badge bg-light text-dark">Frontend only — hooks to backend coming next</span>
           </div>
 
-          <form method="post" enctype="multipart/form-data" novalidate>
+          <div class="alert alert-info d-none align-items-center" id="prefill-banner" role="alert">
+            <div class="me-2 bg-success-subtle rounded-circle d-inline-block status-dot"></div>
+            <div class="flex-grow-1 small prefill-body">
+              Prefill a learner from the sessions on the right to speed this form up.
+            </div>
+          </div>
+
+          <form method="post" enctype="multipart/form-data" novalidate id="certificateForm">
             {% csrf_token %}
 
             <div class="row g-3">
@@ -138,14 +145,49 @@
             <span class="badge bg-warning text-dark">Action Needed</span>
           </div>
           {% if waiting_for_certificate %}
-            <ul class="list-group list-group-flush">
+            <ul class="list-group list-group-flush waiting-certificate-list">
               {% for item in waiting_for_certificate %}
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                  <div>
-                    <div class="fw-semibold">{{ item.title }}</div>
-                    <div class="text-muted small">{{ item.date|date:"M j, Y" }} • {{ item.participants }} attendee{{ item.participants|pluralize }}</div>
+                <li class="list-group-item">
+                  <button
+                    class="waiting-session-toggle w-100 border-0 bg-transparent text-start p-0"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#session-{{ item.id }}-attendees"
+                    aria-expanded="false"
+                    aria-controls="session-{{ item.id }}-attendees"
+                  >
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-semibold">{{ item.title }}</div>
+                        <div class="text-muted small">{{ item.date|date:"M j, Y" }} • {{ item.participants }} attendee{{ item.participants|pluralize }}</div>
+                      </div>
+                      <span class="badge bg-light text-dark">Awaiting issue</span>
+                    </div>
+                  </button>
+
+                  <div class="collapse mt-3" id="session-{{ item.id }}-attendees">
+                    {% if item.attendees %}
+                      <div class="text-muted small mb-2">Select an attendee to prefill the certificate form.</div>
+                      <div class="vstack gap-2">
+                        {% for attendee in item.attendees %}
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm text-start w-100 js-prefill-certificate"
+                            data-training-id="{{ item.id }}"
+                            data-training-title="{{ item.title }}"
+                            data-training-date="{{ item.date|date:'Y-m-d' }}"
+                            data-user-id="{{ attendee.id }}"
+                            data-user-name="{{ attendee.name }}"
+                          >
+                            <span class="fw-semibold">{{ attendee.name }}</span>
+                            {% if attendee.email %}<span class="text-muted ms-1">({{ attendee.email }})</span>{% endif %}
+                          </button>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <p class="text-muted small mb-0">No attendees recorded for this session.</p>
+                    {% endif %}
                   </div>
-                  <span class="badge bg-light text-dark">Awaiting issue</span>
                 </li>
               {% endfor %}
             </ul>
@@ -159,7 +201,6 @@
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="fw-bold mb-0">Recently Issued</h6>
-            <span class="badge bg-success-subtle text-success">Demo data</span>
           </div>
           {% if recent_certifications %}
             <div class="vstack gap-3">
@@ -193,5 +234,90 @@
   width: 10px;
   height: 10px;
 }
+.waiting-session-toggle {
+  color: inherit;
+}
+.waiting-session-toggle:focus {
+  outline: none;
+  box-shadow: none;
+}
+.waiting-certificate-list .list-group-item + .list-group-item {
+  border-top: 0.5px solid #e9ecef;
+}
+.waiting-certificate-list .collapse {
+  border-top: 1px dashed #e9ecef;
+  padding-top: 0.75rem;
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const userField = document.getElementById("id_user") || document.querySelector('[name="user"]');
+  const trainingField = document.getElementById("id_training") || document.querySelector('[name="training"]');
+  const issuedOnField = document.getElementById("id_issued_on") || document.querySelector('[name="issued_on"]');
+  const expiresOnField = document.getElementById("id_expires_on") || document.querySelector('[name="expires_on"]');
+  const prefillBanner = document.getElementById("prefill-banner");
+  const prefillBody = prefillBanner ? prefillBanner.querySelector(".prefill-body") : null;
+  const certificateForm = document.getElementById("certificateForm");
+
+  function formatDateForInput(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addYears(dateString, years) {
+    const base = new Date(dateString + "T00:00:00");
+    if (Number.isNaN(base.getTime())) return "";
+    base.setFullYear(base.getFullYear() + years);
+    return formatDateForInput(base);
+  }
+
+  function setSelectValue(selectEl, value) {
+    if (!selectEl || !value) return;
+    const option = selectEl.querySelector('option[value="' + value + '"]');
+    if (option) {
+      selectEl.value = option.value;
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  function prefillFromAttendee(event) {
+    const button = event.currentTarget;
+    const trainingId = button.dataset.trainingId;
+    const trainingTitle = button.dataset.trainingTitle || "training session";
+    const trainingDate = button.dataset.trainingDate;
+    const userId = button.dataset.userId;
+    const userName = button.dataset.userName || "learner";
+
+    setSelectValue(trainingField, trainingId);
+    setSelectValue(userField, userId);
+
+    if (trainingDate && issuedOnField) {
+      issuedOnField.value = trainingDate;
+    }
+
+    if (trainingDate && expiresOnField) {
+      const expires = addYears(trainingDate, 4);
+      if (expires) {
+        expiresOnField.value = expires;
+      }
+    }
+
+    if (prefillBanner && prefillBody) {
+      prefillBody.textContent = 'Prefilled ' + userName + ' for "' + trainingTitle + '". Issue date uses the session date; expiry set 4 years later.';
+      prefillBanner.classList.remove("d-none");
+    }
+
+    if (certificateForm) {
+      certificateForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  document.querySelectorAll(".js-prefill-certificate").forEach((btn) => {
+    btn.addEventListener("click", prefillFromAttendee);
+  });
+})();
+</script>
 {% endblock %}

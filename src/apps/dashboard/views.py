@@ -245,31 +245,31 @@ def training_certificates(request):
         else:
             messages.error(request, "Please correct the highlighted errors before submitting.")
 
-    recent_certifications = [
-        {
-            "user": "Pat Student",
-            "training": "Lvl 1 – Intro to 3D Printing",
-            "issued_on": timezone.localdate() - timedelta(days=1),
-            "status": "Sent",
-            "certificate_id": "BC-0145",
-        },
-        {
-            "user": "Alex Collaborator",
-            "training": "Workspace Safety Workshop",
-            "issued_on": timezone.localdate() - timedelta(days=3),
-            "status": "Pending email",
-            "certificate_id": "BC-0144",
-        },
-    ]
+    recent_certifications = []
 
-    waiting_for_certificate = [
-        {
+    waiting_for_certificate = []
+    recent_trainings = trainings.filter(
+        date__lte=timezone.localdate()
+    ).prefetch_related("participants").order_by("-date")[:6]
+
+    for training in recent_trainings:
+        attendees = []
+        for user in training.participants.order_by("first_name", "last_name", "username"):
+            display_name = (user.get_full_name() or "").strip() or user.username
+            attendees.append({
+                "id": user.id,
+                "name": display_name,
+                "email": user.email,
+                "username": user.username,
+            })
+
+        waiting_for_certificate.append({
+            "id": training.id,
             "title": training.title,
             "date": training.date,
-            "participants": training.participants.count(),
-        }
-        for training in trainings.filter(date__lte=timezone.localdate()).order_by('-date')[:6]
-    ]
+            "participants": len(attendees),
+            "attendees": attendees,
+        })
 
     return render(request, "training/staff_certificates.html", {
         "user_profile": user_profile,
