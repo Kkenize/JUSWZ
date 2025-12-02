@@ -352,20 +352,9 @@ def training_bulk_remove(request):
 def calendar_add(request):
     """Base calendar for adding training sessions"""
     user_profile = request.user.userprofile
-    today = timezone.localdate()
-    selected_training_title = (
-        request.GET.get('training_id')
-        or request.GET.get('title')
-        or request.GET.get('training')
-    )
 
-    trainings_qs = Training.objects.filter(date__gte=today).order_by('date', 'start_time')
-    has_training_filter = bool(selected_training_title)
-    if has_training_filter:
-        trainings_qs = trainings_qs.filter(title=selected_training_title)
-    else:
-        trainings_qs = trainings_qs.none()
-
+    # Provide the full training history so the sidebar panels (history/overview)
+    # can surface past sessions for duplication and context while adding a new one.
     training_sessions = [
         {
             "id": t.id,
@@ -375,7 +364,7 @@ def calendar_add(request):
             "end_time": t.end_time.strftime("%H:%M"),
             "capacity": t.capacity,
         }
-        for t in trainings_qs
+        for t in Training.objects.all().order_by('-date', '-start_time')
     ]
 
     if request.method == 'POST':
