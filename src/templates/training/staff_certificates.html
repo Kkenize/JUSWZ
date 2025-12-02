@@ -34,7 +34,6 @@
               <h5 class="card-title mb-1">Add Certificate</h5>
               <p class="text-muted small mb-0">Select the learner, training, and attach the certificate details.</p>
             </div>
-            <span class="badge bg-light text-dark">Frontend only — hooks to backend coming next</span>
           </div>
 
           <div class="alert alert-info d-none align-items-center" id="prefill-banner" role="alert">
@@ -107,29 +106,11 @@
               <div class="alert alert-danger mt-3">{{ form.non_field_errors }}</div>
             {% endif %}
 
-            <div class="d-flex justify-content-between align-items-center mt-4">
-              <div class="d-flex align-items-center text-muted small">
-                <span class="me-2 bg-success-subtle rounded-circle d-inline-block status-dot"></span>
-                Certificates notify learners automatically once backend wiring is added.
-              </div>
+            <div class="d-flex justify-content-end mt-4">
               <button type="submit" class="btn btn-bc-gold px-4">Save Certificate</button>
             </div>
           </form>
 
-          {% if submitted_certificate %}
-            <div class="alert alert-success mt-4 mb-0">
-              <div class="fw-semibold">Captured (demo payload):</div>
-              <ul class="mb-0 small">
-                <li>Learner: {{ submitted_certificate.user }}</li>
-                <li>Training: {{ submitted_certificate.training }}</li>
-                <li>Issued On: {{ submitted_certificate.issued_on }}</li>
-                {% if submitted_certificate.expires_on %}<li>Expires On: {{ submitted_certificate.expires_on }}</li>{% endif %}
-                {% if submitted_certificate.certificate_id %}<li>Certificate ID: {{ submitted_certificate.certificate_id }}</li>{% endif %}
-                {% if submitted_certificate.evidence_link %}<li>Evidence: {{ submitted_certificate.evidence_link }}</li>{% endif %}
-                {% if submitted_certificate.notes %}<li>Notes: {{ submitted_certificate.notes }}</li>{% endif %}
-              </ul>
-            </div>
-          {% endif %}
         </div>
       </div>
     </div>

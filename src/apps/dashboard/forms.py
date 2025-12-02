@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate
 
 class TrainingSessionForm(forms.ModelForm):
     class Meta:
@@ -141,54 +141,40 @@ class WorkspaceReservationForm(forms.ModelForm):
         return cleaned_data
 
 
-class CertificateUploadForm(forms.Form):
-    """Simple form to capture certificate metadata; backend persistence to be wired later."""
-
-    user = forms.ModelChoiceField(
-        queryset=User.objects.none(),
-        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select learner'}),
-        label="Student/Collaborator"
-    )
-    training = forms.ModelChoiceField(
-        queryset=Training.objects.none(),
-        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select training session'}),
-        label="Training Session"
-    )
-    certificate_id = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., CERT-2024-0198'}),
-        label="Certificate ID (optional)"
-    )
-    issued_on = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        label="Issued On"
-    )
-    expires_on = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        label="Expires On (optional)"
-    )
-    certificate_file = forms.FileField(
-        required=False,
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        label="Certificate File (PDF/image)"
-    )
-    evidence_link = forms.URLField(
-        required=False,
-        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Link to evidence or portfolio'}),
-        label="Evidence URL (optional)"
-    )
-    notes = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes for the learner or internal team'}),
-        label="Notes"
-    )
+class CertificateUploadForm(forms.ModelForm):
+    """Form to create certificates for users who completed training sessions."""
+    
     notify_user = forms.BooleanField(
         required=False,
         initial=True,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         label="Send notification to learner"
     )
+    
+    class Meta:
+        model = Certificate
+        fields = ['user', 'training', 'certificate_id', 'issued_on', 'expires_on', 
+                  'certificate_file', 'evidence_link', 'notes']
+        widgets = {
+            'user': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select learner'}),
+            'training': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select training session'}),
+            'certificate_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., CERT-2024-0198'}),
+            'issued_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'expires_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'certificate_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'evidence_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Link to evidence or portfolio'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes for the learner or internal team'}),
+        }
+        labels = {
+            'user': 'Student/Collaborator',
+            'training': 'Training Session',
+            'certificate_id': 'Certificate ID (optional)',
+            'issued_on': 'Issued On',
+            'expires_on': 'Expires On (optional)',
+            'certificate_file': 'Certificate File (PDF/image)',
+            'evidence_link': 'Evidence URL (optional)',
+            'notes': 'Notes',
+        }
 
     def __init__(self, *args, trainings=None, learners=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -196,3 +182,8 @@ class CertificateUploadForm(forms.Form):
         learners = learners if learners is not None else User.objects.none()
         self.fields['training'].queryset = trainings
         self.fields['user'].queryset = learners
+        self.fields['certificate_id'].required = False
+        self.fields['expires_on'].required = False
+        self.fields['certificate_file'].required = False
+        self.fields['evidence_link'].required = False
+        self.fields['notes'].required = False

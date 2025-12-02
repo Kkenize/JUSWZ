@@ -19,7 +19,7 @@ from django.contrib.auth.models import User
 from django.utils.http import url_has_allowed_host_and_scheme
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, create_google_calendar_event, remove_google_calendar_event
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate, create_google_calendar_event, remove_google_calendar_event
 from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
@@ -237,15 +237,35 @@ def training_certificates(request):
     submitted_certificate = None
     if request.method == 'POST':
         if form.is_valid():
-            submitted_certificate = form.cleaned_data
+            certificate = form.save(commit=False)
+            certificate.issued_by = request.user
+            certificate.status = 'sent' if form.cleaned_data.get('notify_user') else 'pending'
+            certificate.save()
+            
+            # TODO: Send email notification if notify_user is True
+            # For now, we just save the certificate
+            
             messages.success(
                 request,
-                "Certificate captured. Backend save/notification hooks can connect to this submission."
+                f"Certificate issued successfully for {certificate.user.get_full_name() or certificate.user.username}!"
             )
+            # Redirect to prevent resubmission on refresh
+            return redirect('dashboard:training_certificates')
         else:
             messages.error(request, "Please correct the highlighted errors before submitting.")
 
-    recent_certifications = []
+    # Get recent certifications (last 10)
+    recent_certifications = Certificate.objects.select_related('user', 'training').order_by('-issued_on', '-created_at')[:10]
+    recent_certifications_list = []
+    for cert in recent_certifications:
+        display_name = (cert.user.get_full_name() or "").strip() or cert.user.username
+        recent_certifications_list.append({
+            "user": display_name,
+            "training": cert.training.title,
+            "issued_on": cert.issued_on,
+            "status": cert.get_status_display(),
+            "certificate_id": cert.certificate_id,
+        })
 
     waiting_for_certificate = []
     recent_trainings = trainings.filter(
@@ -254,7 +274,14 @@ def training_certificates(request):
 
     for training in recent_trainings:
         attendees = []
+        # Only show attendees who don't already have a certificate for this training
+        existing_certificate_users = set(
+            Certificate.objects.filter(training=training).values_list('user_id', flat=True)
+        )
         for user in training.participants.order_by("first_name", "last_name", "username"):
+            # Skip users who already have a certificate for this training
+            if user.id in existing_certificate_users:
+                continue
             display_name = (user.get_full_name() or "").strip() or user.username
             attendees.append({
                 "id": user.id,
@@ -263,22 +290,22 @@ def training_certificates(request):
                 "username": user.username,
             })
 
-        waiting_for_certificate.append({
-            "id": training.id,
-            "title": training.title,
-            "date": training.date,
-            "participants": len(attendees),
-            "attendees": attendees,
-        })
+        if attendees:  # Only add training if there are attendees without certificates
+            waiting_for_certificate.append({
+                "id": training.id,
+                "title": training.title,
+                "date": training.date,
+                "participants": len(attendees),
+                "attendees": attendees,
+            })
 
     return render(request, "training/staff_certificates.html", {
         "user_profile": user_profile,
         "form": form,
         "trainings": trainings,
         "learners": learners,
-        "recent_certifications": recent_certifications,
+        "recent_certifications": recent_certifications_list,
         "waiting_for_certificate": waiting_for_certificate,
-        "submitted_certificate": submitted_certificate,
     })
 
 

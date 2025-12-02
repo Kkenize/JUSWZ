@@ -269,6 +269,48 @@ class Availability(models.Model):
         return f"{self.user.username} - {label} {self.start_time}-{self.end_time} ({status})"
 
 
+class Certificate(models.Model):
+    """Certificates issued to users for completing training sessions."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending email'),
+        ('sent', 'Sent'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='certificates')
+    training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='certificates')
+    certificate_id = models.CharField(max_length=100, blank=True, null=True)
+    issued_on = models.DateField()
+    expires_on = models.DateField(null=True, blank=True)
+    certificate_file = models.FileField(upload_to='certificates/', blank=True, null=True)
+    evidence_link = models.URLField(blank=True, null=True)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    issued_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='certificates_issued'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-issued_on', '-created_at']
+        unique_together = ['user', 'training']  # One certificate per user per training
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.training.title} ({self.issued_on})"
+    
+    @property
+    def is_expired(self):
+        if not self.expires_on:
+            return False
+        from django.utils import timezone
+        return self.expires_on < timezone.localdate()
+
+
 def create_google_calendar_event(user, training, *, save_event_id=True):
     """Attempt to sync the session to the user's Google Calendar."""
 
