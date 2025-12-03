@@ -37,7 +37,11 @@
             </div>
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-danger">Reject Reservation</button>
-              <a href="{% url 'dashboard:my_reservations' %}" class="btn btn-secondary">Cancel</a>
+              {% if next_url %}
+                <a href="{{ next_url }}" class="btn btn-secondary">Cancel</a>
+              {% else %}
+                <a href="{% url 'dashboard:collaborator_requests' %}" class="btn btn-secondary">Cancel</a>
+              {% endif %}
             </div>
           </form>
         </div>
