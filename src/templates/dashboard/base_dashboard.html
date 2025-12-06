@@ -37,8 +37,8 @@
                     </a>
                     <div class="collapse" id="trainingSection">
                         <div class="nav-section-items">
-                            <a href="{% url 'dashboard:my_trainings' %}" class="nav-link nav-sub-item">My Trainings</a>
                             {% if user_profile.role == 'student' or user_profile.role == 'collaborator' %}
+                                <a href="{% url 'dashboard:my_trainings' %}" class="nav-link nav-sub-item">My Trainings</a>
                                 <a href="{% url 'dashboard:my_certifications' %}" class="nav-link nav-sub-item">My Certifications</a>
                             {% endif %}
                             {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
@@ -61,20 +61,6 @@
                             <a href="{% url 'dashboard:requests' %}" class="nav-link nav-sub-item">Shift Requests</a>
                             <a href="{% url 'dashboard:manage_availability' %}" class="nav-link nav-sub-item">Manage Availability</a>
                             <a href="{% url 'dashboard:collaborator_requests' %}" class="nav-link nav-sub-item">Collaborator Requests</a>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Admin Management Section (collapsible, admin only) -->
-                {% if user_profile.role == 'admin' %}
-                <div class="nav-section">
-                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#adminManagementSection" role="button" aria-expanded="false" aria-controls="adminManagementSection">
-                        Admin Management <span class="float-end">▼</span>
-                    </a>
-                    <div class="collapse" id="adminManagementSection">
-                        <div class="nav-section-items">
-                            <a href="{% url 'profiles:admin_user_search' %}" class="nav-link nav-sub-item">User Management</a>
                         </div>
                     </div>
                 </div>
@@ -146,6 +132,9 @@
 
                 <!-- Profile Section (always visible) -->
                 <a href="{% url 'profiles:profile' request.user.username %}" class="nav-link">User Profile</a>
+                {% if user_profile.role == 'admin' %}
+                    <a href="{% url 'profiles:admin_user_search' %}" class="nav-link">User Management</a>
+                {% endif %}
 
                 {% endblock %}
             </nav>
