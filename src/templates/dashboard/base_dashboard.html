@@ -19,7 +19,7 @@
             <nav class="sidebar-nav">
                 {% block sidebar_items %}
 
-                <!-- Student Dashboard (only for students) -->
+                <!-- Role-specific Dashboard (always visible) -->
                 {% if user_profile.role == 'student' %}
                     <a href="{% url 'dashboard:student' %}" class="nav-link">Student Dashboard</a>
                 {% elif user_profile.role == 'collaborator' %}
@@ -30,19 +30,119 @@
                     <a href="{% url 'dashboard:admin' %}" class="nav-link">Admin Dashboard</a>
                 {% endif %}
 
-                <!-- Common menu items -->
-                <a href="{% url 'dashboard:my_trainings' %}" class="nav-link">My Trainings</a>
-                <a href="#certifications" class="nav-link">My Certifications</a>
-                <a href="#reservations" class="nav-link">Tool Reservations</a>
-                <a href="#reports" class="nav-link">Issues/Reports</a>
-                <a href="#waitlists" class="nav-link">My Waitlists</a>
+                <!-- Training Section (collapsible) -->
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#trainingSection" role="button" aria-expanded="false" aria-controls="trainingSection">
+                        Training <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="trainingSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'dashboard:my_trainings' %}" class="nav-link nav-sub-item">My Trainings</a>
+                            <a href="#certifications" class="nav-link nav-sub-item">My Certifications</a>
+                            {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
+                                <a href="{% url 'dashboard:training_management' %}" class="nav-link nav-sub-item">Training Management</a>
+                                <a href="{% url 'dashboard:training_certificates' %}" class="nav-link nav-sub-item">Certificates</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
-                {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
-                    <a href="{% url 'dashboard:training_certificates' %}" class="nav-link">Certificates</a>
-                    <a href="{% url 'dashboard:collaborator_requests' %}" class="nav-link">Collaborator Requests</a>
+                <!-- Staff Tools Section (collapsible, staff only) -->
+                {% if user_profile.role == 'staff' %}
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#staffSection" role="button" aria-expanded="false" aria-controls="staffSection">
+                        Staff Tools <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="staffSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'dashboard:my_shifts' %}" class="nav-link nav-sub-item">My Shifts</a>
+                            <a href="{% url 'dashboard:requests' %}" class="nav-link nav-sub-item">Shift Requests</a>
+                            <a href="{% url 'dashboard:manage_availability' %}" class="nav-link nav-sub-item">Manage Availability</a>
+                            <a href="{% url 'dashboard:collaborator_requests' %}" class="nav-link nav-sub-item">Collaborator Requests</a>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
 
-                <!-- User Profile -->
+                <!-- Admin Management Section (collapsible, admin only) -->
+                {% if user_profile.role == 'admin' %}
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#adminManagementSection" role="button" aria-expanded="false" aria-controls="adminManagementSection">
+                        Admin Management <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="adminManagementSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'profiles:admin_user_search' %}" class="nav-link nav-sub-item">User Management</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Admin Tools Section (collapsible, admin only) -->
+                {% if user_profile.role == 'admin' %}
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#adminSection" role="button" aria-expanded="false" aria-controls="adminSection">
+                        Admin Tools <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="adminSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'dashboard:collaborator_requests' %}" class="nav-link nav-sub-item">Collaborator Requests</a>
+                            <a href="#system-status" class="nav-link nav-sub-item">System Status</a>
+                            <a href="#equipment" class="nav-link nav-sub-item">Equipment</a>
+                            <a href="#analytics" class="nav-link nav-sub-item">Analytics</a>
+                            <a href="#security" class="nav-link nav-sub-item">Security</a>
+                            <a href="#settings" class="nav-link nav-sub-item">Settings</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Reservations Section (collapsible, collaborators) -->
+                {% if user_profile.role == 'collaborator' %}
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#reservationsSection" role="button" aria-expanded="false" aria-controls="reservationsSection">
+                        Reservations <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="reservationsSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'dashboard:my_reservations' %}" class="nav-link nav-sub-item">My Reservations</a>
+                            <a href="{% url 'dashboard:workspace_reserve' %}" class="nav-link nav-sub-item">Reserve Workspace</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Issues & Support Section (collapsible, all users) -->
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#issuesSection" role="button" aria-expanded="false" aria-controls="issuesSection">
+                        Issues & Support <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="issuesSection">
+                        <div class="nav-section-items">
+                            <a href="{% url 'dashboard:report_issue' %}" class="nav-link nav-sub-item">Report Issue</a>
+                            <a href="{% url 'dashboard:my_issues' %}" class="nav-link nav-sub-item">My Issues</a>
+                            {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
+                                <a href="{% url 'dashboard:review_issues' %}" class="nav-link nav-sub-item">Review Issues</a>
+                            {% endif %}
+                            <a href="{% url 'dashboard:help' %}" class="nav-link nav-sub-item">Help & Support</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources Section (collapsible, all users) -->
+                <div class="nav-section">
+                    <a class="nav-link nav-section-header" data-bs-toggle="collapse" href="#resourcesSection" role="button" aria-expanded="false" aria-controls="resourcesSection">
+                        Resources <span class="float-end">▼</span>
+                    </a>
+                    <div class="collapse" id="resourcesSection">
+                        <div class="nav-section-items">
+                            <a href="#reservations" class="nav-link nav-sub-item">Tool Reservations</a>
+                            <a href="#waitlists" class="nav-link nav-sub-item">My Waitlists</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Section (always visible) -->
                 <a href="{% url 'profiles:profile' request.user.username %}" class="nav-link">User Profile</a>
 
                 {% endblock %}
@@ -65,5 +165,54 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
+    
+    <style>
+        /* Collapsible sidebar sections */
+        .nav-section {
+            margin-bottom: 0.25rem;
+        }
+        
+        .nav-section-header {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-section-header:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-section-header[aria-expanded="true"] span {
+            transform: rotate(180deg);
+            transition: transform 0.3s;
+        }
+        
+        .nav-section-header span {
+            transition: transform 0.3s;
+            font-size: 0.75rem;
+        }
+        
+        .nav-section-items {
+            padding-left: 0;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-sub-item {
+            padding-left: 2rem !important;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .nav-sub-item:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
 </body>
 </html>
