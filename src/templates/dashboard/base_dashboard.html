@@ -38,7 +38,9 @@
                     <div class="collapse" id="trainingSection">
                         <div class="nav-section-items">
                             <a href="{% url 'dashboard:my_trainings' %}" class="nav-link nav-sub-item">My Trainings</a>
-                            <a href="#certifications" class="nav-link nav-sub-item">My Certifications</a>
+                            {% if user_profile.role == 'student' or user_profile.role == 'collaborator' %}
+                                <a href="{% url 'dashboard:my_certifications' %}" class="nav-link nav-sub-item">My Certifications</a>
+                            {% endif %}
                             {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
                                 <a href="{% url 'dashboard:training_management' %}" class="nav-link nav-sub-item">Training Management</a>
                                 <a href="{% url 'dashboard:training_certificates' %}" class="nav-link nav-sub-item">Certificates</a>
@@ -180,6 +182,7 @@
             justify-content: space-between;
             align-items: center;
             transition: background-color 0.2s;
+            color: var(--text-light) !important;
         }
         
         .nav-section-header:hover {
@@ -194,6 +197,7 @@
         .nav-section-header span {
             transition: transform 0.3s;
             font-size: 0.75rem;
+            color: var(--text-light) !important;
         }
         
         .nav-section-items {
@@ -207,6 +211,7 @@
             padding-bottom: 0.5rem;
             font-size: 0.9rem;
             opacity: 0.9;
+            color: var(--text-light) !important;
         }
         
         .nav-sub-item:hover {

@@ -26,6 +26,9 @@ urlpatterns = [
     # My Trainings (student view)
     path("my-trainings/", views.my_trainings, name="my_trainings"),
     
+    # My Certifications (student/collaborator view)
+    path("my-certifications/", views.my_certifications, name="my_certifications"),
+    
     # Training Reserve (under My Trainings)
     path("training-reserve/", views.training_reserve, name="training_reserve"),
 

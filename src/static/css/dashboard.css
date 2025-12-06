@@ -66,6 +66,23 @@
     color: var(--bc-gold);
 }
 
+/* Ensure all sidebar text is visible */
+.sidebar,
+.sidebar * {
+    color: var(--text-light);
+}
+
+.sidebar .nav-link,
+.sidebar .nav-section-header,
+.sidebar .nav-sub-item {
+    color: var(--text-light);
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    color: var(--bc-gold);
+}
+
 /* Main Content Area */
 .main-content {
     flex: 1;

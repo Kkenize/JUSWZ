@@ -53,9 +53,17 @@ def dashboard_redirect(request):
 def student_dashboard(request):
     """Student-only dashboard"""
     user_profile = request.user.userprofile
+    # Count active (non-expired) certifications
+    active_certifications_count = Certificate.objects.filter(
+        user=request.user
+    ).filter(
+        Q(expires_on__isnull=True) | Q(expires_on__gte=timezone.localdate())
+    ).count()
+    
     return render(request, 'dashboard/student_dashboard.html', {
         "user_profile": user_profile,
         "reserved_trainings_count": request.user.enrolled_trainings.filter(date__gte=timezone.localdate()).count(),
+        "active_certifications_count": active_certifications_count,
     })
     
 @never_cache
@@ -65,8 +73,18 @@ def collaborator_dashboard(request):
     user_profile = request.user.userprofile
     if user_profile.role != 'collaborator':
         return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    # Count active (non-expired) certifications
+    active_certifications_count = Certificate.objects.filter(
+        user=request.user
+    ).filter(
+        Q(expires_on__isnull=True) | Q(expires_on__gte=timezone.localdate())
+    ).count()
+    
     return render(request, 'dashboard/collaborator_dashboard.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "reserved_trainings_count": request.user.enrolled_trainings.filter(date__gte=timezone.localdate()).count(),
+        "active_certifications_count": active_certifications_count,
     })
 
 @never_cache
@@ -310,6 +328,51 @@ def training_certificates(request):
         "learners": learners,
         "recent_certifications": recent_certifications_list,
         "waiting_for_certificate": waiting_for_certificate,
+    })
+
+
+@never_cache
+@login_required
+def my_certifications(request):
+    """View for students and collaborators to view their own certifications."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['student', 'collaborator']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    # Get all certificates for the current user
+    certificates = Certificate.objects.filter(user=request.user).select_related('training', 'issued_by').order_by('-issued_on', '-created_at')
+    
+    # Separate into active and expired
+    active_certificates = []
+    expired_certificates = []
+    
+    for cert in certificates:
+        cert_data = {
+            'certificate': cert,
+            'training': cert.training,
+            'certificate_id': cert.certificate_id,
+            'issued_on': cert.issued_on,
+            'expires_on': cert.expires_on,
+            'is_expired': cert.is_expired,
+            'certificate_file': cert.certificate_file,
+            'evidence_link': cert.evidence_link,
+            'notes': cert.notes,
+            'status': cert.get_status_display(),
+            'issued_by': cert.issued_by.get_full_name() if cert.issued_by else 'System',
+        }
+        
+        if cert.is_expired:
+            expired_certificates.append(cert_data)
+        else:
+            active_certificates.append(cert_data)
+    
+    return render(request, "dashboard/my_certifications.html", {
+        "user_profile": user_profile,
+        "active_certificates": active_certificates,
+        "expired_certificates": expired_certificates,
+        "total_count": len(active_certificates) + len(expired_certificates),
+        "active_count": len(active_certificates),
+        "expired_count": len(expired_certificates),
     })
 
 
