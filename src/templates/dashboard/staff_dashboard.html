@@ -53,6 +53,20 @@
         <a href="{% url 'dashboard:requests' %}" class="card-button">Review Requests</a>
     </div>
 
+    <!-- Review Issues -->
+    <div class="dashboard-card">
+        <h3 class="card-title">Review Issues</h3>
+        <p class="card-text">{{ pending_issues_count }} Pending issue{{ pending_issues_count|pluralize }}</p>
+        <a href="{% url 'dashboard:review_issues' %}" class="card-button">Review Issues</a>
+    </div>
+
+    <!-- Report Issue -->
+    <div class="dashboard-card">
+        <h3 class="card-title">Report Issue</h3>
+        <p class="card-text">Report equipment or safety issues</p>
+        <a href="{% url 'dashboard:report_issue' %}" class="card-button">Submit Report</a>
+    </div>
+
     <!-- Reports -->
     <div class="dashboard-card">
         <h3 class="card-title">Reports</h3>

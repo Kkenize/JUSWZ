@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate, Issue
 
 class TrainingSessionForm(forms.ModelForm):
     class Meta:
@@ -187,3 +187,86 @@ class CertificateUploadForm(forms.ModelForm):
         self.fields['certificate_file'].required = False
         self.fields['evidence_link'].required = False
         self.fields['notes'].required = False
+
+
+class ReportIssueForm(forms.ModelForm):
+    """Form for users to report issues."""
+    
+    class Meta:
+        model = Issue
+        fields = ['title', 'description', 'urgency']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Brief summary of the issue'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Please provide detailed information about the issue...'
+            }),
+            'urgency': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+        }
+        labels = {
+            'title': 'Issue Title',
+            'description': 'Description',
+            'urgency': 'Urgency Level',
+        }
+
+
+class ResolveIssueForm(forms.Form):
+    """Form for admin/staff to resolve or dismiss issues."""
+    
+    action = forms.ChoiceField(
+        choices=[('resolved', 'Resolved'), ('dismissed', 'Dismissed')],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Action'
+    )
+    resolution_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Optional message to the user who reported this issue...'
+        }),
+        label='Message to User (Optional)'
+    )
+
+
+class FlagIssueForm(forms.Form):
+    """Form for admin/staff to flag an issue to a specific admin/staff member."""
+    
+    assigned_to = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Assign To',
+        empty_label='Select a staff/admin member...'
+    )
+    
+    def __init__(self, *args, **kwargs):
+        current_user = kwargs.pop('current_user', None)
+        super().__init__(*args, **kwargs)
+        # Get all staff and admin users except the current user
+        from apps.profiles.models import UserProfile
+        staff_admin_profiles = UserProfile.objects.filter(
+            role__in=['staff', 'admin']
+        ).exclude(user=current_user).select_related('user')
+        users_queryset = User.objects.filter(
+            id__in=[p.user.id for p in staff_admin_profiles]
+        ).order_by('first_name', 'last_name', 'username')
+        
+        # Customize the label to show name and email
+        class CustomModelChoiceField(forms.ModelChoiceField):
+            def label_from_instance(self, obj):
+                name = obj.get_full_name() or obj.username
+                return f"{name} ({obj.email})"
+        
+        # Replace the field with a custom one
+        self.fields['assigned_to'] = CustomModelChoiceField(
+            queryset=users_queryset,
+            widget=forms.Select(attrs={'class': 'form-select'}),
+            label='Assign To',
+            empty_label='Select a staff/admin member...'
+        )

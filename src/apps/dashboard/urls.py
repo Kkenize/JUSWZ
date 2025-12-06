@@ -76,4 +76,11 @@ urlpatterns = [
     # Availability
     path('requests/availability/', views.manage_availability, name='manage_availability'),
     path('requests/availability/<int:availability_id>/delete/', views.delete_availability, name='delete_availability'),
+    
+    # Issue Reporting
+    path('issues/report/', views.report_issue, name='report_issue'),
+    path('issues/my-issues/', views.my_issues, name='my_issues'),
+    path('issues/review/', views.review_issues, name='review_issues'),
+    path('issues/<int:issue_id>/resolve/', views.resolve_issue, name='resolve_issue'),
+    path('issues/<int:issue_id>/flag/', views.flag_issue, name='flag_issue'),
 ]

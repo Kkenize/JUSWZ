@@ -1,0 +1,110 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Issues - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">My Issues</h1>
+      <p class="text-muted mb-0">View the status of issues you've reported.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'dashboard:report_issue' %}" class="btn btn-bc-gold">Report New Issue</a>
+      {% if user_profile.role == 'student' %}
+        <a href="{% url 'dashboard:student' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+      {% elif user_profile.role == 'collaborator' %}
+        <a href="{% url 'dashboard:collaborator' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+      {% elif user_profile.role == 'staff' %}
+        <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+      {% elif user_profile.role == 'admin' %}
+        <a href="{% url 'dashboard:admin' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{% url 'dashboard:my_issues' %}" class="btn btn-sm {% if not status_filter %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="{% url 'dashboard:my_issues' %}?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Pending</a>
+    <a href="{% url 'dashboard:my_issues' %}?status=resolved" class="btn btn-sm {% if status_filter == 'resolved' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Resolved</a>
+    <a href="{% url 'dashboard:my_issues' %}?status=dismissed" class="btn btn-sm {% if status_filter == 'dismissed' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Dismissed</a>
+  </div>
+
+  <div class="row g-4">
+    {% if issues %}
+      {% for issue in issues %}
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1">
+                  <h5 class="mb-1">{{ issue.title }}</h5>
+                  <div class="d-flex flex-wrap gap-2 mb-2">
+                    {% if issue.urgency == 'critical' %}
+                      <span class="badge bg-danger">Critical</span>
+                    {% elif issue.urgency == 'high' %}
+                      <span class="badge bg-warning text-dark">High</span>
+                    {% elif issue.urgency == 'medium' %}
+                      <span class="badge bg-info text-dark">Medium</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Low</span>
+                    {% endif %}
+                    
+                    {% if issue.status == 'pending' %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif issue.status == 'resolved' %}
+                      <span class="badge bg-success">Resolved</span>
+                    {% elif issue.status == 'dismissed' %}
+                      <span class="badge bg-secondary">Dismissed</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="text-muted small text-end">
+                  <div>Submitted: {{ issue.created_at|date:"M j, Y g:i A" }}</div>
+                  {% if issue.resolved_at %}
+                    <div>{{ issue.status|title }}: {{ issue.resolved_at|date:"M j, Y g:i A" }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <p class="text-muted mb-3">{{ issue.description }}</p>
+              
+              {% if issue.resolution_message %}
+                <div class="alert {% if issue.status == 'resolved' %}alert-success{% else %}alert-secondary{% endif %} mb-0">
+                  <strong>Response:</strong> {{ issue.resolution_message }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0">
+          <div class="card-body text-center py-5">
+            <p class="text-muted mb-2">No issues found.</p>
+            <a href="{% url 'dashboard:report_issue' %}" class="btn btn-bc-gold">Report an Issue</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-bc-gold {
+  background-color: #c6a75e;
+  border-color: #c6a75e;
+  color: white;
+}
+.btn-bc-gold:hover {
+  background-color: #b39654;
+  border-color: #b39654;
+  color: white;
+}
+</style>
+{% endblock %}
+

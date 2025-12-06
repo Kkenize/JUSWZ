@@ -311,6 +311,88 @@ class Certificate(models.Model):
         return self.expires_on < timezone.localdate()
 
 
+class Issue(models.Model):
+    """Issue reports submitted by users."""
+    URGENCY_CHOICES = [
+        ('critical', 'Critical'),
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    # Issue details
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default='medium')
+    
+    # User information (auto-captured)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_issues')
+    user_name = models.CharField(max_length=200)  # Stored name at time of submission
+    user_email = models.EmailField()
+    user_phone = models.CharField(max_length=15, blank=True)  # Optional
+    
+    # Status and resolution
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    
+    # Assignment (for flagging to specific admin/staff)
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_issues'
+    )
+    
+    # Resolution details
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_issues'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_message = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.username} ({self.status})"
+    
+    @property
+    def is_pending(self):
+        return self.status == 'pending'
+    
+    @property
+    def is_resolved(self):
+        return self.status == 'resolved'
+    
+    @property
+    def is_dismissed(self):
+        return self.status == 'dismissed'
+    
+    @property
+    def urgency_priority(self):
+        """Return numeric priority for sorting (higher = more urgent)"""
+        priority_map = {
+            'critical': 4,
+            'high': 3,
+            'medium': 2,
+            'low': 1,
+        }
+        return priority_map.get(self.urgency, 0)
+
+
 def create_google_calendar_event(user, training, *, save_event_id=True):
     """Attempt to sync the session to the user's Google Calendar."""
 

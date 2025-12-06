@@ -19,8 +19,8 @@ from django.contrib.auth.models import User
 from django.utils.http import url_has_allowed_host_and_scheme
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
-from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate, create_google_calendar_event, remove_google_calendar_event
-from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm
+from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate, Issue, create_google_calendar_event, remove_google_calendar_event
+from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm, ReportIssueForm, ResolveIssueForm, FlagIssueForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
@@ -79,11 +79,13 @@ def staff_dashboard(request):
 
     pending_workspace_requests = WorkspaceReservation.objects.filter(status='pending').count()
     certificate_backlog = Training.objects.filter(date__lte=timezone.localdate()).count()
+    pending_issues_count = Issue.objects.filter(status='pending').count()
 
     return render(request, 'dashboard/staff_dashboard.html', {
         "user_profile": user_profile,
         "pending_workspace_requests": pending_workspace_requests,
         "certificate_backlog": certificate_backlog,
+        "pending_issues_count": pending_issues_count,
     })
 
 
@@ -94,8 +96,10 @@ def admin_dashboard(request):
     user_profile = request.user.userprofile
     if user_profile.role != 'admin':
         return HttpResponseForbidden("You do not have permission to access this page.")
+    pending_issues_count = Issue.objects.filter(status='pending').count()
     return render(request, 'dashboard/admin_dashboard.html', {
-        "user_profile": user_profile
+        "user_profile": user_profile,
+        "pending_issues_count": pending_issues_count,
     })
 
 @never_cache
@@ -2046,4 +2050,202 @@ def reject_workspace_reservation(request, reservation_id):
         'reservation': reservation,
         'user_profile': user_profile,
         'next_url': _get_safe_next_url(request, 'dashboard:collaborator_requests'),
+    })
+
+
+@never_cache
+@login_required
+def report_issue(request):
+    """Allow any user to report an issue."""
+    user_profile = request.user.userprofile
+    
+    if request.method == 'POST':
+        form = ReportIssueForm(request.POST)
+        if form.is_valid():
+            issue = form.save(commit=False)
+            issue.user = request.user
+            # Auto-capture user information
+            issue.user_name = request.user.get_full_name() or request.user.username
+            issue.user_email = request.user.email
+            # Try to get phone number from profile if available
+            try:
+                profile = request.user.profile
+                if profile.phone_number:
+                    issue.user_phone = profile.phone_number
+            except:
+                pass  # Profile might not exist, phone is optional
+            issue.save()
+            messages.success(request, "Issue reported successfully! We'll review it soon.")
+            return redirect('dashboard:my_issues')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ReportIssueForm()
+    
+    return render(request, 'dashboard/report_issue.html', {
+        'user_profile': user_profile,
+        'form': form
+    })
+
+
+@never_cache
+@login_required
+def my_issues(request):
+    """View for users to see their submitted issues."""
+    user_profile = request.user.userprofile
+    
+    issues = Issue.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Filter by status if provided
+    status_filter = request.GET.get('status')
+    if status_filter in ['pending', 'resolved', 'dismissed']:
+        issues = issues.filter(status=status_filter)
+    
+    return render(request, 'dashboard/my_issues.html', {
+        'user_profile': user_profile,
+        'issues': issues,
+        'status_filter': status_filter
+    })
+
+
+@never_cache
+@login_required
+def review_issues(request):
+    """Staff/admin view to review and manage issues."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    status_filter = (request.GET.get('status') or 'pending').lower()
+    if status_filter not in ['pending', 'resolved', 'dismissed', 'all']:
+        status_filter = 'pending'
+    
+    search_query = (request.GET.get('q') or "").strip()
+    
+    # Get all issues, ordered by urgency priority (critical to low) then by created_at (oldest first)
+    issues = Issue.objects.select_related('user', 'assigned_to', 'resolved_by').all()
+    
+    if status_filter != 'all':
+        issues = issues.filter(status=status_filter)
+    
+    if search_query:
+        issues = issues.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__username__icontains=search_query)
+        )
+    
+    # Convert to list and sort: assigned issues first (for current user), then by urgency priority, then by created_at
+    issues_list = list(issues)
+    
+    # Separate assigned issues (for current user) and unassigned issues
+    assigned_to_me = [i for i in issues_list if i.assigned_to == request.user and i.status == 'pending']
+    other_issues = [i for i in issues_list if i not in assigned_to_me]
+    
+    # Sort each group: by urgency priority (descending), then by created_at (ascending - oldest first)
+    assigned_to_me.sort(key=lambda x: (-x.urgency_priority, x.created_at))
+    other_issues.sort(key=lambda x: (-x.urgency_priority, x.created_at))
+    
+    # Combine: assigned issues first, then others
+    sorted_issues = assigned_to_me + other_issues
+    
+    # Status counts
+    status_counts = {
+        "pending": Issue.objects.filter(status='pending').count(),
+        "resolved": Issue.objects.filter(status='resolved').count(),
+        "dismissed": Issue.objects.filter(status='dismissed').count(),
+    }
+    
+    # Get critical/high pending issues for sidebar
+    critical_pending_list = list(Issue.objects.filter(
+        status='pending',
+        urgency__in=['critical', 'high']
+    ).select_related('user', 'assigned_to'))
+    # Sort by urgency priority (descending), then by created_at (ascending - oldest first)
+    critical_pending_list.sort(key=lambda x: (-x.urgency_priority, x.created_at))
+    critical_pending = critical_pending_list[:5]
+    
+    return render(request, "dashboard/review_issues.html", {
+        "user_profile": user_profile,
+        "issues": sorted_issues,
+        "status_filter": status_filter,
+        "search_query": search_query,
+        "status_counts": status_counts,
+        "critical_pending": critical_pending,
+        "next_url": request.get_full_path(),
+    })
+
+
+@never_cache
+@login_required
+def resolve_issue(request, issue_id):
+    """Resolve or dismiss an issue. Only admin or assigned staff can resolve flagged issues."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    issue = get_object_or_404(Issue, id=issue_id)
+    
+    # Check if issue is flagged to someone else
+    if issue.assigned_to and issue.assigned_to != request.user:
+        if user_profile.role != 'admin':
+            return HttpResponseForbidden("This issue is assigned to another staff member. Only admins can resolve issues assigned to others.")
+    
+    if request.method == 'POST':
+        form = ResolveIssueForm(request.POST)
+        if form.is_valid():
+            action = form.cleaned_data['action']
+            resolution_message = form.cleaned_data['resolution_message']
+            
+            issue.status = action
+            issue.resolved_by = request.user
+            issue.resolved_at = timezone.now()
+            issue.resolution_message = resolution_message
+            issue.save()
+            
+            messages.success(request, f"Issue marked as {action}.")
+            return redirect(_get_safe_next_url(request, 'dashboard:review_issues'))
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ResolveIssueForm()
+    
+    return render(request, 'dashboard/resolve_issue.html', {
+        'issue': issue,
+        'user_profile': user_profile,
+        'form': form,
+        'next_url': _get_safe_next_url(request, 'dashboard:review_issues'),
+    })
+
+
+@never_cache
+@login_required
+def flag_issue(request, issue_id):
+    """Flag an issue to a specific admin/staff member."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+    
+    issue = get_object_or_404(Issue, id=issue_id)
+    
+    if request.method == 'POST':
+        form = FlagIssueForm(request.POST, current_user=request.user)
+        if form.is_valid():
+            assigned_to = form.cleaned_data['assigned_to']
+            issue.assigned_to = assigned_to
+            issue.save()
+            messages.success(request, f"Issue assigned to {assigned_to.get_full_name() or assigned_to.username}.")
+            return redirect(_get_safe_next_url(request, 'dashboard:review_issues'))
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = FlagIssueForm(current_user=request.user)
+    
+    return render(request, 'dashboard/flag_issue.html', {
+        'issue': issue,
+        'user_profile': user_profile,
+        'form': form,
+        'next_url': _get_safe_next_url(request, 'dashboard:review_issues'),
     })

@@ -1,0 +1,237 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Review Issues - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Review Issues</h1>
+      <p class="text-muted mb-0">Review and manage issues reported by users.</p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if user_profile.role == 'staff' %}
+        <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Staff Dashboard</a>
+      {% elif user_profile.role == 'admin' %}
+        <a href="{% url 'dashboard:admin' %}" class="btn btn-outline-secondary">← Back to Admin Dashboard</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Pending</p>
+          <h4 class="mb-0">{{ status_counts.pending|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Resolved</p>
+          <h4 class="mb-0 text-success">{{ status_counts.resolved|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Dismissed</p>
+          <h4 class="mb-0 text-secondary">{{ status_counts.dismissed|default:0 }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Critical/High Priority</p>
+          <h4 class="mb-0">{{ critical_pending|length }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'dashboard:review_issues' %}?status=pending{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'pending' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="{% url 'dashboard:review_issues' %}?status=resolved{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'resolved' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Resolved</a>
+      <a href="{% url 'dashboard:review_issues' %}?status=dismissed{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'dismissed' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">Dismissed</a>
+      <a href="{% url 'dashboard:review_issues' %}?status=all{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="btn btn-sm {% if status_filter == 'all' %}btn-bc-gold text-white{% else %}btn-outline-secondary{% endif %}">All</a>
+    </div>
+
+    <form method="get" class="d-flex align-items-center gap-2">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by title, description, or user..." style="min-width: 240px;">
+      <button type="submit" class="btn btn-outline-secondary">Search</button>
+    </form>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Issues</h5>
+            {% if search_query %}
+              <span class="badge bg-light text-dark">Filtered by "{{ search_query }}"</span>
+            {% endif %}
+          </div>
+
+          {% if issues %}
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr class="text-muted small">
+                    <th scope="col">Title</th>
+                    <th scope="col">Reported By</th>
+                    <th scope="col">Urgency</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Assigned To</th>
+                    <th scope="col" class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for issue in issues %}
+                    <tr {% if issue.assigned_to == request.user and issue.status == 'pending' %}class="table-warning"{% endif %}>
+                      <td>
+                        <div class="fw-semibold">{{ issue.title|truncatewords:8 }}</div>
+                        <div class="text-muted small">{{ issue.created_at|date:"M j, Y g:i A" }}</div>
+                      </td>
+                      <td>
+                        <div class="fw-semibold">{{ issue.user.get_full_name|default:issue.user.username }}</div>
+                        <div class="text-muted small">{{ issue.user.email }}</div>
+                        {% if issue.user_phone %}
+                          <div class="text-muted small">{{ issue.user_phone }}</div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if issue.urgency == 'critical' %}
+                          <span class="badge bg-danger">Critical</span>
+                        {% elif issue.urgency == 'high' %}
+                          <span class="badge bg-warning text-dark">High</span>
+                        {% elif issue.urgency == 'medium' %}
+                          <span class="badge bg-info text-dark">Medium</span>
+                        {% else %}
+                          <span class="badge bg-secondary">Low</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if issue.status == 'pending' %}
+                          <span class="badge bg-warning text-dark">Pending</span>
+                        {% elif issue.status == 'resolved' %}
+                          <span class="badge bg-success">Resolved</span>
+                        {% elif issue.status == 'dismissed' %}
+                          <span class="badge bg-secondary">Dismissed</span>
+                        {% endif %}
+                        {% if issue.assigned_to == request.user and issue.status == 'pending' %}
+                          <div class="text-muted small mt-1">← Assigned to you</div>
+                        {% elif issue.assigned_to and issue.status == 'pending' %}
+                          <div class="text-muted small mt-1">→ {{ issue.assigned_to.get_full_name|default:issue.assigned_to.username }}</div>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if issue.assigned_to %}
+                          <span class="text-muted small">{{ issue.assigned_to.get_full_name|default:issue.assigned_to.username }}</span>
+                        {% else %}
+                          <span class="text-muted small">—</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">
+                        {% if issue.status == 'pending' %}
+                          {% if not issue.assigned_to or issue.assigned_to == request.user or user_profile.role == 'admin' %}
+                            <a href="{% url 'dashboard:resolve_issue' issue.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-success">Resolve</a>
+                          {% else %}
+                            <span class="text-muted small">Assigned to another</span>
+                          {% endif %}
+                          <a href="{% url 'dashboard:flag_issue' issue.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-outline-primary ms-1">Flag</a>
+                          <a href="mailto:{{ issue.user_email }}?subject=Re: {{ issue.title|urlencode }}" class="btn btn-sm btn-outline-info ms-1">Follow Up</a>
+                        {% else %}
+                          <span class="text-muted small">No action</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <p class="text-muted mb-2">No issues in this view yet.</p>
+              <p class="small text-muted mb-0">Try switching the status filter or clearing the search.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">Critical/High Priority</h6>
+            <span class="badge bg-danger">{{ critical_pending|length }} urgent</span>
+          </div>
+          {% if critical_pending %}
+            <div class="vstack gap-3">
+              {% for issue in critical_pending %}
+                <div class="border rounded p-3">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="fw-semibold">{{ issue.title|truncatewords:10 }}</div>
+                    {% if issue.urgency == 'critical' %}
+                      <span class="badge bg-danger">Critical</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">High</span>
+                    {% endif %}
+                  </div>
+                  <div class="text-muted small mb-2">{{ issue.user.get_full_name|default:issue.user.username }}</div>
+                  <p class="small text-muted mb-2">{{ issue.description|truncatewords:15 }}</p>
+                  <div class="d-flex gap-2">
+                    {% if not issue.assigned_to or issue.assigned_to == request.user or user_profile.role == 'admin' %}
+                      <a href="{% url 'dashboard:resolve_issue' issue.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-success">Resolve</a>
+                    {% endif %}
+                    <a href="{% url 'dashboard:flag_issue' issue.id %}?next={{ next_url|urlencode }}" class="btn btn-sm btn-outline-primary">Flag</a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No critical or high priority issues.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h6 class="fw-bold mb-2">Issue Management Guide</h6>
+          <ul class="small text-muted mb-0">
+            <li><strong>Resolve:</strong> Mark as resolved or dismissed with optional message</li>
+            <li><strong>Flag:</strong> Assign to a specific staff/admin member</li>
+            <li><strong>Follow Up:</strong> Email the user for clarification</li>
+            <li>Issues are sorted by urgency (critical → low), then by submission time</li>
+            <li>Issues assigned to you appear highlighted and at the top</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-bc-gold {
+  background-color: #c6a75e;
+  border-color: #c6a75e;
+  color: white;
+}
+.btn-bc-gold:hover {
+  background-color: #b39654;
+  border-color: #b39654;
+  color: white;
+}
+</style>
+{% endblock %}
+
