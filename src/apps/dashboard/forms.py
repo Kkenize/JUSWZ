@@ -153,26 +153,19 @@ class CertificateUploadForm(forms.ModelForm):
     
     class Meta:
         model = Certificate
-        fields = ['user', 'training', 'certificate_id', 'issued_on', 'expires_on', 
-                  'certificate_file', 'evidence_link', 'notes']
+        fields = ['user', 'training', 'issued_on', 'expires_on', 'notes']
         widgets = {
             'user': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select learner'}),
             'training': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select training session'}),
-            'certificate_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., CERT-2024-0198'}),
             'issued_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'expires_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'certificate_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'evidence_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Link to evidence or portfolio'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes for the learner or internal team'}),
         }
         labels = {
-            'user': 'Student/Collaborator',
+            'user': 'Learner',
             'training': 'Training Session',
-            'certificate_id': 'Certificate ID (optional)',
             'issued_on': 'Issued On',
             'expires_on': 'Expires On (optional)',
-            'certificate_file': 'Certificate File (PDF/image)',
-            'evidence_link': 'Evidence URL (optional)',
             'notes': 'Notes',
         }
 
@@ -182,10 +175,7 @@ class CertificateUploadForm(forms.ModelForm):
         learners = learners if learners is not None else User.objects.none()
         self.fields['training'].queryset = trainings
         self.fields['user'].queryset = learners
-        self.fields['certificate_id'].required = False
         self.fields['expires_on'].required = False
-        self.fields['certificate_file'].required = False
-        self.fields['evidence_link'].required = False
         self.fields['notes'].required = False
 
 
@@ -213,6 +203,26 @@ class ReportIssueForm(forms.ModelForm):
             'title': 'Issue Title',
             'description': 'Description',
             'urgency': 'Urgency Level',
+        }
+
+
+class CertificateEditForm(forms.ModelForm):
+    """Form for staff/admin to edit issued certificates."""
+
+    class Meta:
+        model = Certificate
+        fields = ['issued_on', 'expires_on', 'status', 'notes']
+        widgets = {
+            'issued_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'expires_on': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes for the learner or internal team'}),
+        }
+        labels = {
+            'issued_on': 'Issued On',
+            'expires_on': 'Expires On (optional)',
+            'status': 'Status',
+            'notes': 'Notes',
         }
 
 

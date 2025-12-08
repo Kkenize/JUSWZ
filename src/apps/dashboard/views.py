@@ -20,7 +20,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from apps.profiles.models import UserProfile
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Training, ShiftRequest, TimeOffRequest, Availability, WorkspaceReservation, Certificate, Issue, create_google_calendar_event, remove_google_calendar_event
-from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm, ReportIssueForm, ResolveIssueForm, FlagIssueForm
+from .forms import TrainingSessionForm, ShiftRequestForm, TimeOffRequestForm, AvailabilityForm, WorkspaceReservationForm, CertificateUploadForm, ReportIssueForm, ResolveIssueForm, FlagIssueForm, CertificateEditForm
 from .prerequisites import TRAINING_SECTIONS, get_training_metadata, serialize_prereq_map
 
 
@@ -288,7 +288,6 @@ def training_certificates(request):
             "training": cert.training.title,
             "issued_on": cert.issued_on,
             "status": cert.get_status_display(),
-            "certificate_id": cert.certificate_id,
             "user_id": cert.user_id,
         })
 
@@ -311,7 +310,6 @@ def training_certificates(request):
             "training": cert.training.title,
             "issued_on": cert.issued_on,
             "status": cert.get_status_display(),
-            "certificate_id": cert.certificate_id,
         })
 
     issued_certificates_by_user = []
@@ -374,25 +372,42 @@ def issued_certificates_history(request):
     if user_profile.role not in ['staff', 'admin']:
         return HttpResponseForbidden("You do not have permission to access this page.")
 
-    issued_certs = Certificate.objects.filter(
-        issued_by=request.user
-    ).select_related("user", "training").order_by("-issued_on", "-created_at")
+    issued_certs = Certificate.objects.select_related("user", "training").order_by("-issued_on", "-created_at")
 
     timeline = []
+    grouped = {}
     for cert in issued_certs:
         display_name = (cert.user.get_full_name() or "").strip() or cert.user.username
-        timeline.append({
+        cert_item = {
             "user": display_name,
             "training": cert.training.title,
             "issued_on": cert.issued_on,
             "status": cert.get_status_display(),
-            "certificate_id": cert.certificate_id,
             "user_email": cert.user.email,
+            "id": cert.id,
+        }
+        timeline.append(cert_item)
+
+        if cert.user_id not in grouped:
+            grouped[cert.user_id] = {
+                "user": display_name,
+                "user_email": cert.user.email,
+                "certificates": [],
+            }
+        grouped[cert.user_id]["certificates"].append(cert_item)
+
+    grouped_by_user = []
+    for user_data in grouped.values():
+        grouped_by_user.append({
+            **user_data,
+            "count": len(user_data["certificates"]),
         })
+    grouped_by_user.sort(key=lambda item: item["user"].lower())
 
     return render(request, "training/issued_certificates_history.html", {
         "user_profile": user_profile,
         "timeline": timeline,
+        "grouped_by_user": grouped_by_user,
     })
 
 
@@ -438,6 +453,34 @@ def my_certifications(request):
         "total_count": len(active_certificates) + len(expired_certificates),
         "active_count": len(active_certificates),
         "expired_count": len(expired_certificates),
+    })
+
+
+@never_cache
+@login_required
+def edit_certificate(request, certificate_id):
+    """Allow staff/admin to edit certificate metadata."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    certificate = get_object_or_404(Certificate, id=certificate_id)
+
+    if request.method == 'POST':
+        form = CertificateEditForm(request.POST, instance=certificate)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Certificate updated successfully.")
+            return redirect('dashboard:issued_certificates_history')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = CertificateEditForm(instance=certificate)
+
+    return render(request, "training/edit_certificate.html", {
+        "user_profile": user_profile,
+        "certificate": certificate,
+        "form": form,
     })
 
 

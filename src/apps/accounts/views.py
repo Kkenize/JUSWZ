@@ -51,19 +51,41 @@ class GoogleLoginCallback(APIView):
 
             email = userinfo.get("email")
             name = userinfo.get("name")
+            google_uid = userinfo.get("sub")
 
-            # Create or get local user
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={"username": email, "first_name": name}
-            )
+            # Reuse an existing SocialAccount when present to avoid duplicate users
+            social_account = SocialAccount.objects.filter(
+                provider="google", uid=google_uid
+            ).select_related("user").first()
+
+            if social_account:
+                user = social_account.user
+            else:
+                # Pick the oldest user with this email (there may be duplicates)
+                user = User.objects.filter(email=email).order_by("id").first()
+                if not user:
+                    base_username = email or google_uid or "google_user"
+                    username = base_username
+                    suffix = 1
+                    while User.objects.filter(username=username).exists():
+                        suffix += 1
+                        username = f"{base_username}_{suffix}"
+
+                    user = User.objects.create(
+                        email=email,
+                        username=username,
+                        first_name=name or "",
+                    )
+
+                social_account, _ = SocialAccount.objects.get_or_create(
+                    user=user, provider="google", uid=google_uid
+                )
 
             # Log in user
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
             # Save access token for Google API calls
             app, _ = SocialApp.objects.get_or_create(provider='google', defaults={'name': 'Google', 'client_id': settings.GOOGLE_OAUTH_CLIENT_ID, 'secret': settings.GOOGLE_OAUTH_CLIENT_SECRET})
-            social_account, _ = SocialAccount.objects.get_or_create(user=user, provider='google', uid=userinfo.get("sub"))
 
             # Ensure SocialToken is created and saved for this user/account/app
             SocialToken.objects.update_or_create(
@@ -73,7 +95,7 @@ class GoogleLoginCallback(APIView):
                     "token": access_token,
                     'token_secret': token_response.get("refresh_token", "")
                 }
-         )
+            )
 
 
             # Redirect to dashboard home
