@@ -276,8 +276,10 @@ def training_certificates(request):
         else:
             messages.error(request, "Please correct the highlighted errors before submitting.")
 
-    # Get recent certifications (last 10)
-    recent_certifications = Certificate.objects.select_related('user', 'training').order_by('-issued_on', '-created_at')[:10]
+    # Get recent certifications you've issued (last 10)
+    recent_certifications = Certificate.objects.filter(
+        issued_by=request.user
+    ).select_related('user', 'training').order_by('-issued_on', '-created_at')[:10]
     recent_certifications_list = []
     for cert in recent_certifications:
         display_name = (cert.user.get_full_name() or "").strip() or cert.user.username
@@ -287,7 +289,39 @@ def training_certificates(request):
             "issued_on": cert.issued_on,
             "status": cert.get_status_display(),
             "certificate_id": cert.certificate_id,
+            "user_id": cert.user_id,
         })
+
+    # Certificates this staff/admin user has issued, grouped by learner
+    issued_certificates_qs = Certificate.objects.filter(
+        issued_by=request.user
+    ).select_related("user", "training").order_by("-issued_on", "-created_at")
+
+    issued_by_user = {}
+    for cert in issued_certificates_qs:
+        display_name = (cert.user.get_full_name() or "").strip() or cert.user.username
+        if cert.user_id not in issued_by_user:
+            issued_by_user[cert.user_id] = {
+                "user_id": cert.user_id,
+                "name": display_name,
+                "email": cert.user.email,
+                "certificates": [],
+            }
+        issued_by_user[cert.user_id]["certificates"].append({
+            "training": cert.training.title,
+            "issued_on": cert.issued_on,
+            "status": cert.get_status_display(),
+            "certificate_id": cert.certificate_id,
+        })
+
+    issued_certificates_by_user = []
+    for user_data in issued_by_user.values():
+        issued_certificates_by_user.append({
+            **user_data,
+            "count": len(user_data["certificates"]),
+        })
+
+    issued_certificates_by_user.sort(key=lambda item: (-item["count"], item["name"].lower()))
 
     waiting_for_certificate = []
     recent_trainings = trainings.filter(
@@ -327,16 +361,47 @@ def training_certificates(request):
         "trainings": trainings,
         "learners": learners,
         "recent_certifications": recent_certifications_list,
+        "issued_certificates_by_user": issued_certificates_by_user,
         "waiting_for_certificate": waiting_for_certificate,
     })
 
 
 @never_cache
 @login_required
-def my_certifications(request):
-    """View for students and collaborators to view their own certifications."""
+def issued_certificates_history(request):
+    """Timeline view of all certificates issued by the current staff/admin user."""
     user_profile = request.user.userprofile
-    if user_profile.role not in ['student', 'collaborator']:
+    if user_profile.role not in ['staff', 'admin']:
+        return HttpResponseForbidden("You do not have permission to access this page.")
+
+    issued_certs = Certificate.objects.filter(
+        issued_by=request.user
+    ).select_related("user", "training").order_by("-issued_on", "-created_at")
+
+    timeline = []
+    for cert in issued_certs:
+        display_name = (cert.user.get_full_name() or "").strip() or cert.user.username
+        timeline.append({
+            "user": display_name,
+            "training": cert.training.title,
+            "issued_on": cert.issued_on,
+            "status": cert.get_status_display(),
+            "certificate_id": cert.certificate_id,
+            "user_email": cert.user.email,
+        })
+
+    return render(request, "training/issued_certificates_history.html", {
+        "user_profile": user_profile,
+        "timeline": timeline,
+    })
+
+
+@never_cache
+@login_required
+def my_certifications(request):
+    """Allow eligible users to view their own certifications."""
+    user_profile = request.user.userprofile
+    if user_profile.role not in ['student', 'collaborator', 'staff']:
         return HttpResponseForbidden("You do not have permission to access this page.")
     
     # Get all certificates for the current user

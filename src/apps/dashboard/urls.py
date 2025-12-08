@@ -17,6 +17,7 @@ urlpatterns = [
     path('training-management/all/', views.training_list, name='training_list'),
     path('training-management/past/', views.training_past, name='training_past'),
     path('training-management/certificates/', views.training_certificates, name='training_certificates'),
+    path('training-management/certificates/issued/', views.issued_certificates_history, name='issued_certificates_history'),
     path('training-management/bulk-edit/', views.training_bulk_edit, name='training_bulk_edit'),
     path('training-management/bulk-remove/', views.training_bulk_remove, name='training_bulk_remove'),
     

@@ -15,8 +15,14 @@
         <a href="{% url 'dashboard:student' %}" class="btn btn-outline-secondary">← Back to Student Dashboard</a>
       {% elif user_profile.role == 'collaborator' %}
         <a href="{% url 'dashboard:collaborator' %}" class="btn btn-outline-secondary">← Back to Collaborator Dashboard</a>
+      {% elif user_profile.role == 'staff' %}
+        <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Staff Dashboard</a>
       {% endif %}
-      <a href="{% url 'dashboard:my_trainings' %}" class="btn btn-bc-gold text-white">My Trainings</a>
+      {% if user_profile.role == 'student' or user_profile.role == 'collaborator' %}
+        <a href="{% url 'dashboard:my_trainings' %}" class="btn btn-bc-gold text-white">My Trainings</a>
+      {% elif user_profile.role == 'staff' %}
+        <a href="{% url 'dashboard:training_certificates' %}" class="btn btn-bc-gold text-white">Issue Certificates</a>
+      {% endif %}
     </div>
   </div>
 
@@ -88,53 +94,33 @@
             <div class="card shadow-sm border-0 h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                  <h5 class="card-title mb-0">{{ cert_data.training.title }}</h5>
+                  <div>
+                    <h5 class="card-title mb-0">{{ cert_data.training.title }}</h5>
+                    <div class="small text-muted">Issued {{ cert_data.issued_on|date:"M j, Y" }}</div>
+                  </div>
                   <span class="badge bg-success">Active</span>
                 </div>
-                
-                <div class="mb-3">
-                  {% if cert_data.certificate_id %}
-                    <div class="small text-muted mb-1">
-                      <strong>Certificate ID:</strong> {{ cert_data.certificate_id }}
-                    </div>
-                  {% endif %}
-                  <div class="small text-muted mb-1">
-                    <strong>Issued:</strong> {{ cert_data.issued_on|date:"M j, Y" }}
-                  </div>
-                  {% if cert_data.expires_on %}
-                    <div class="small text-muted mb-1">
-                      <strong>Expires:</strong> {{ cert_data.expires_on|date:"M j, Y" }}
-                    </div>
-                  {% else %}
-                    <div class="small text-muted mb-1">
-                      <strong>Expires:</strong> No expiration
-                    </div>
-                  {% endif %}
-                  {% if cert_data.issued_by %}
-                    <div class="small text-muted">
-                      <strong>Issued by:</strong> {{ cert_data.issued_by }}
-                    </div>
-                  {% endif %}
-                </div>
-
                 {% if cert_data.notes %}
-                  <div class="mb-3">
-                    <p class="small text-muted mb-0">{{ cert_data.notes|truncatewords:20 }}</p>
-                  </div>
+                  <p class="small text-muted mt-2 mb-3">{{ cert_data.notes|truncatewords:18 }}</p>
                 {% endif %}
 
-                <div class="d-flex gap-2 flex-wrap">
-                  {% if cert_data.certificate_file %}
-                    <a href="{{ cert_data.certificate_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-download"></i> Download Certificate
-                    </a>
-                  {% endif %}
-                  {% if cert_data.evidence_link %}
-                    <a href="{{ cert_data.evidence_link }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                      <i class="bi bi-link-45deg"></i> View Evidence
-                    </a>
-                  {% endif %}
-                </div>
+                <button
+                  type="button"
+                  class="btn btn-bc-gold text-white btn-sm js-view-cert-details"
+                  data-training="{{ cert_data.training.title }}"
+                  data-status="Active"
+                  data-status-label="{{ cert_data.status }}"
+                  data-status-class="success"
+                  data-issued-on="{{ cert_data.issued_on|date:'M j, Y' }}"
+                  data-expires-on="{% if cert_data.expires_on %}{{ cert_data.expires_on|date:'M j, Y' }}{% else %}No expiration{% endif %}"
+                  data-certificate-id="{{ cert_data.certificate_id|default:'' }}"
+                  data-issued-by="{{ cert_data.issued_by|default:'System' }}"
+                  data-notes="{{ cert_data.notes|default_if_none:'' }}"
+                  data-certificate-file-url="{% if cert_data.certificate_file %}{{ cert_data.certificate_file.url }}{% endif %}"
+                  data-evidence-link="{{ cert_data.evidence_link|default:'' }}"
+                >
+                  View Details
+                </button>
               </div>
             </div>
           </div>
@@ -156,46 +142,29 @@
                   <h5 class="card-title mb-0">{{ cert_data.training.title }}</h5>
                   <span class="badge bg-danger">Expired</span>
                 </div>
-                
-                <div class="mb-3">
-                  {% if cert_data.certificate_id %}
-                    <div class="small text-muted mb-1">
-                      <strong>Certificate ID:</strong> {{ cert_data.certificate_id }}
-                    </div>
-                  {% endif %}
-                  <div class="small text-muted mb-1">
-                    <strong>Issued:</strong> {{ cert_data.issued_on|date:"M j, Y" }}
-                  </div>
-                  {% if cert_data.expires_on %}
-                    <div class="small text-danger mb-1">
-                      <strong>Expired:</strong> {{ cert_data.expires_on|date:"M j, Y" }}
-                    </div>
-                  {% endif %}
-                  {% if cert_data.issued_by %}
-                    <div class="small text-muted">
-                      <strong>Issued by:</strong> {{ cert_data.issued_by }}
-                    </div>
-                  {% endif %}
-                </div>
+                <div class="small text-muted mb-3">Expired {{ cert_data.expires_on|date:"M j, Y" }}</div>
 
                 {% if cert_data.notes %}
-                  <div class="mb-3">
-                    <p class="small text-muted mb-0">{{ cert_data.notes|truncatewords:20 }}</p>
-                  </div>
+                  <p class="small text-muted mb-3">{{ cert_data.notes|truncatewords:18 }}</p>
                 {% endif %}
 
-                <div class="d-flex gap-2 flex-wrap">
-                  {% if cert_data.certificate_file %}
-                    <a href="{{ cert_data.certificate_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-download"></i> Download Certificate
-                    </a>
-                  {% endif %}
-                  {% if cert_data.evidence_link %}
-                    <a href="{{ cert_data.evidence_link }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                      <i class="bi bi-link-45deg"></i> View Evidence
-                    </a>
-                  {% endif %}
-                </div>
+                <button
+                  type="button"
+                  class="btn btn-bc-gold text-white btn-sm js-view-cert-details"
+                  data-training="{{ cert_data.training.title }}"
+                  data-status="Expired"
+                  data-status-label="{{ cert_data.status }}"
+                  data-status-class="danger"
+                  data-issued-on="{{ cert_data.issued_on|date:'M j, Y' }}"
+                  data-expires-on="{% if cert_data.expires_on %}{{ cert_data.expires_on|date:'M j, Y' }}{% else %}No expiration{% endif %}"
+                  data-certificate-id="{{ cert_data.certificate_id|default:'' }}"
+                  data-issued-by="{{ cert_data.issued_by|default:'System' }}"
+                  data-notes="{{ cert_data.notes|default_if_none:'' }}"
+                  data-certificate-file-url="{% if cert_data.certificate_file %}{{ cert_data.certificate_file.url }}{% endif %}"
+                  data-evidence-link="{{ cert_data.evidence_link|default:'' }}"
+                >
+                  View Details
+                </button>
               </div>
             </div>
           </div>
@@ -215,6 +184,59 @@
       <a href="{% url 'dashboard:my_trainings' %}" class="btn btn-bc-gold text-white">Browse Trainings</a>
     </div>
   {% endif %}
+
+  <!-- Certificate Detail Modal -->
+  <div class="modal fade" id="certificateDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1" id="certificateTitle">Certificate</h5>
+            <div class="small text-muted" id="certificateStatusText"></div>
+          </div>
+          <span class="badge bg-secondary ms-3" id="certificateStatusBadge">Status</span>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="small text-muted">Issued</div>
+              <div class="fw-semibold" id="certificateIssuedOn">—</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Expires</div>
+              <div class="fw-semibold" id="certificateExpiresOn">—</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Certificate ID</div>
+              <div class="fw-semibold" id="certificateId">—</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Issued by</div>
+              <div class="fw-semibold" id="certificateIssuedBy">—</div>
+            </div>
+          </div>
+
+          <div class="mt-3" id="certificateNotesRow">
+            <div class="small text-muted mb-1">Notes</div>
+            <div class="text-muted" id="certificateNotes">—</div>
+          </div>
+        </div>
+        <div class="modal-footer flex-wrap">
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" id="certificateFileLink" target="_blank" rel="noopener" hidden>Download Certificate</a>
+            <a class="btn btn-outline-secondary" id="evidenceLink" target="_blank" rel="noopener" hidden>View Evidence</a>
+          </div>
+          <div class="ms-auto d-flex gap-2">
+            {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
+              <a href="{% url 'dashboard:training_certificates' %}" class="btn btn-bc-gold" id="issueCertificateBtn">Issue Certificate</a>
+            {% endif %}
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -231,3 +253,65 @@
 </style>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+(function() {
+  const modalEl = document.getElementById("certificateDetailModal");
+  if (!modalEl || typeof bootstrap === "undefined") return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  const titleEl = document.getElementById("certificateTitle");
+  const statusTextEl = document.getElementById("certificateStatusText");
+  const statusBadge = document.getElementById("certificateStatusBadge");
+  const issuedOnEl = document.getElementById("certificateIssuedOn");
+  const expiresOnEl = document.getElementById("certificateExpiresOn");
+  const certIdEl = document.getElementById("certificateId");
+  const issuedByEl = document.getElementById("certificateIssuedBy");
+  const notesRow = document.getElementById("certificateNotesRow");
+  const notesEl = document.getElementById("certificateNotes");
+  const fileLink = document.getElementById("certificateFileLink");
+  const evidenceLink = document.getElementById("evidenceLink");
+
+  function setLink(el, url) {
+    if (!el) return;
+    if (url) {
+      el.href = url;
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
+  }
+
+  document.querySelectorAll(".js-view-cert-details").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const training = btn.dataset.training || "Certificate";
+      const statusLabel = btn.dataset.statusLabel || btn.dataset.status || "Status";
+      const statusClass = btn.dataset.statusClass || "secondary";
+
+      titleEl.textContent = training;
+      statusTextEl.textContent = statusLabel;
+      statusBadge.textContent = statusLabel;
+      statusBadge.className = `badge bg-${statusClass}`;
+
+      issuedOnEl.textContent = btn.dataset.issuedOn || "—";
+      expiresOnEl.textContent = btn.dataset.expiresOn || "—";
+      certIdEl.textContent = btn.dataset.certificateId || "—";
+      issuedByEl.textContent = btn.dataset.issuedBy || "—";
+
+      const notes = btn.dataset.notes || "";
+      if (notes.trim()) {
+        notesEl.textContent = notes;
+        notesRow.hidden = false;
+      } else {
+        notesRow.hidden = true;
+      }
+
+      setLink(fileLink, btn.dataset.certificateFileUrl);
+      setLink(evidenceLink, btn.dataset.evidenceLink);
+
+      modal.show();
+    });
+  });
+})();
+</script>
+{% endblock %}

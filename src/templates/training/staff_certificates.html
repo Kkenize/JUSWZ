@@ -16,7 +16,7 @@
       {% elif user_profile.role == 'admin' %}
         <a href="{% url 'dashboard:admin' %}" class="btn btn-outline-secondary">← Back to Admin Dashboard</a>
       {% endif %}
-      <a href="{% url 'dashboard:training_management' %}" class="btn btn-bc-gold text-white">Manage Trainings</a>
+      <a href="{% url 'dashboard:issued_certificates_history' %}" class="btn btn-bc-gold text-white">Issued Certificates</a>
     </div>
   </div>
 
@@ -190,7 +190,9 @@
           {% if recent_certifications %}
             <div class="vstack gap-3">
               {% for cert in recent_certifications %}
-                <div class="d-flex justify-content-between align-items-start border rounded p-3">
+                <button type="button"
+                        class="d-flex justify-content-between align-items-start border rounded p-3 text-start w-100 bg-white js-show-issued"
+                        data-user-id="{{ cert.user_id }}">
                   <div>
                     <div class="fw-semibold">{{ cert.user }}</div>
                     <div class="text-muted small">{{ cert.training }}</div>
@@ -200,7 +202,7 @@
                     {% endif %}
                   </div>
                   <span class="badge {% if cert.status == 'Sent' %}bg-success{% else %}bg-secondary{% endif %}">{{ cert.status }}</span>
-                </div>
+                </button>
               {% endfor %}
             </div>
           {% else %}

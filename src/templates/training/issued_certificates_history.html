@@ -1,0 +1,92 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Issued Certificates Timeline - BC Hatchery{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start align-items-lg-center gap-3 mt-3 mb-4">
+    <div>
+      <h1 class="fw-bold mb-1">Issued Certificates</h1>
+      <p class="text-muted mb-0">All certificates you've issued, in timeline order.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if user_profile.role == 'staff' %}
+        <a href="{% url 'dashboard:staff' %}" class="btn btn-outline-secondary">← Back to Staff Dashboard</a>
+      {% elif user_profile.role == 'admin' %}
+        <a href="{% url 'dashboard:admin' %}" class="btn btn-outline-secondary">← Back to Admin Dashboard</a>
+      {% endif %}
+      <a href="{% url 'dashboard:training_certificates' %}" class="btn btn-bc-gold text-white">Issue New Certificate</a>
+    </div>
+  </div>
+
+  {% if timeline %}
+    <div class="timeline">
+      {% for cert in timeline %}
+        <div class="timeline-row">
+          <div class="timeline-dot"></div>
+          <div class="timeline-card">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <div>
+                <div class="fw-semibold">{{ cert.training }}</div>
+                <div class="text-muted small">Issued {{ cert.issued_on|date:"M j, Y" }}</div>
+              </div>
+              <span class="badge {% if cert.status == 'Sent' %}bg-success{% else %}bg-secondary{% endif %}">{{ cert.status }}</span>
+            </div>
+            <div class="small text-muted">Learner: {{ cert.user }}{% if cert.user_email %} ({{ cert.user_email }}){% endif %}</div>
+            {% if cert.certificate_id %}
+              <div class="small text-muted">Certificate ID: {{ cert.certificate_id }}</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-5">
+      <div class="mb-3"><i class="bi bi-award" style="font-size: 3rem; color: #6c757d;"></i></div>
+      <h4 class="fw-bold mb-2">No certificates issued yet</h4>
+      <p class="text-muted mb-3">Issue certificates to learners and they'll appear here in chronological order.</p>
+      <a href="{% url 'dashboard:training_certificates' %}" class="btn btn-bc-gold text-white">Issue Certificate</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+  position: relative;
+  padding-left: 1.25rem;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: #e9ecef;
+}
+.timeline-row {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.timeline-dot {
+  position: absolute;
+  left: 0.1rem;
+  top: 0.35rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #c9a64d;
+  border: 2px solid #fdfbf5;
+}
+.timeline-card {
+  background: #fdfbf5;
+  border: 1px solid #f0e6cf;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+</style>
+{% endblock %}

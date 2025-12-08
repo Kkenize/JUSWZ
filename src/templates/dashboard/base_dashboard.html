@@ -41,6 +41,9 @@
                                 <a href="{% url 'dashboard:my_trainings' %}" class="nav-link nav-sub-item">My Trainings</a>
                                 <a href="{% url 'dashboard:my_certifications' %}" class="nav-link nav-sub-item">My Certifications</a>
                             {% endif %}
+                            {% if user_profile.role == 'staff' %}
+                                <a href="{% url 'dashboard:my_certifications' %}" class="nav-link nav-sub-item">My Certifications</a>
+                            {% endif %}
                             {% if user_profile.role == 'staff' or user_profile.role == 'admin' %}
                                 <a href="{% url 'dashboard:training_management' %}" class="nav-link nav-sub-item">Training Management</a>
                                 <a href="{% url 'dashboard:training_certificates' %}" class="nav-link nav-sub-item">Certificates</a>
