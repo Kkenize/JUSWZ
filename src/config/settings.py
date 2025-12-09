@@ -144,7 +144,7 @@ SITE_ID = 1
 # Google OAuth credentials
 GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "https://juswz-official.onrender.com/accounts/google/login/callback/")
+GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "https://juswz-official.onrender.com/api/v1/auth/google/callback/")
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
