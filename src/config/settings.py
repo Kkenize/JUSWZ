@@ -138,17 +138,6 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_EMAIL_DOMAIN = "bc.edu"
 
-SOCIALACCOUNT_PROVIDERS = {
-    "google": {
-        "SCOPE": [
-            "profile",
-            "email",
-            "https://www.googleapis.com/auth/calendar",
-        ],
-        "AUTH_PARAMS": {"access_type": "offline", "prompt": "consent"}
-    }
-}
-
 # Sites Framework
 SITE_ID = 1
 
@@ -157,6 +146,20 @@ GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
 GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "https://juswz-official.onrender.com/accounts/google/login/callback/")
 
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+       "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+        },
+        "SCOPE": [
+            "profile",
+            "email",
+            "https://www.googleapis.com/auth/calendar",
+        ],
+        "AUTH_PARAMS": {"access_type": "offline", "prompt": "consent"}
+    }
+}
 # dj-rest-auth settings
 REST_USE_JWT = False  # We're using Token authentication instead of JWT
 REST_AUTH = {
