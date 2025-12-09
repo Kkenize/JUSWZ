@@ -26,7 +26,7 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-!3399c!bfng%2a!%hltor-!5)#@r%zp+j78!=@h-yoisf&@xf+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
@@ -34,6 +34,9 @@ else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'juswz-official.onrender.com']
 
 # Application definition
+CSRF_TRUSTED_ORIGINS = [
+    "https://juswz-official.onrender.com",
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -152,7 +155,7 @@ SITE_ID = 1
 # Google OAuth credentials
 GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "https://juswz-official.onrender.com/api/v1/auth/google/callback/")
+GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL", "https://juswz-official.onrender.com/accounts/google/login/callback/")
 
 # dj-rest-auth settings
 REST_USE_JWT = False  # We're using Token authentication instead of JWT
