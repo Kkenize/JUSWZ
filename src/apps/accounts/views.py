@@ -45,7 +45,7 @@ class GoogleLoginCallback(APIView):
             
             # Fetch user info from Google 
             userinfo = requests.get(
-                "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+                "https://openidconnect.googleapis.com/v1/userinfo",
                 headers={"Authorization": f"Bearer {access_token}"}
             ).json()
 
