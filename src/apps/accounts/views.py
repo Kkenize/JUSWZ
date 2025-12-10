@@ -42,16 +42,19 @@ class GoogleLoginCallback(APIView):
             }
             token_response = requests.post(token_url, data=data).json()
             access_token = token_response.get("access_token")
-
-            # Fetch user info from Google
+            
+            # Fetch user info from Google 
             userinfo = requests.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
+                "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
                 headers={"Authorization": f"Bearer {access_token}"}
             ).json()
 
             email = userinfo.get("email")
+            if not email:
+                return Response({"error": "Google did not return an email"}, status=400)
+
             name = userinfo.get("name")
-            google_uid = userinfo.get("sub")
+            google_uid = userinfo.get("id") or userinfo.get("sub")
 
             # Reuse an existing SocialAccount when present to avoid duplicate users
             social_account = SocialAccount.objects.filter(
